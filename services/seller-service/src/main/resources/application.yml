@@ -53,9 +53,11 @@ management:
     tags:
       application: ${spring.application.name}
       environment: ${MARKETFLOW_ENVIRONMENT:local}
-  otlp:
+  opentelemetry:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
   tracing:
     sampling:
       probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}

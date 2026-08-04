@@ -1,6 +1,5 @@
 package com.marketflow.seller.infrastructure.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketflow.seller.infrastructure.web.CorrelationIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -8,6 +7,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.MDC;
+import tools.jackson.databind.ObjectMapper;
 
 final class SecurityProblemWriter {
 
