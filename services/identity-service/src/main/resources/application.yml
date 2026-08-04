@@ -1,0 +1,82 @@
+spring:
+  application:
+    name: marketflow-identity-service
+  datasource:
+    url: ${IDENTITY_DATABASE_URL:jdbc:postgresql://localhost:5432/marketflow_identity}
+    username: ${IDENTITY_DATABASE_USER:identity_app}
+    password: ${IDENTITY_DATABASE_PASSWORD:local-development-only}
+    hikari:
+      maximum-pool-size: 10
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+  data:
+    redis:
+      connect-timeout: 2s
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
+server:
+  port: ${SERVER_PORT:8081}
+  shutdown: graceful
+  forward-headers-strategy: framework
+
+marketflow:
+  identity:
+    issuer: ${IDENTITY_TOKEN_ISSUER:http://identity-service:8081}
+    audience: ${IDENTITY_TOKEN_AUDIENCE:marketflow-api}
+    access-token-ttl: ${IDENTITY_ACCESS_TOKEN_TTL:PT10M}
+    refresh-idle-ttl: ${IDENTITY_REFRESH_IDLE_TTL:P7D}
+    refresh-absolute-ttl: ${IDENTITY_REFRESH_ABSOLUTE_TTL:P30D}
+    verification-ttl: ${IDENTITY_VERIFICATION_TTL:PT30M}
+    internal-service-key: ${IDENTITY_INTERNAL_SERVICE_KEY:local-development-only-change-me}
+    rate-limit-key: ${IDENTITY_RATE_LIMIT_KEY:local-development-only-rate-key}
+    login-limit: ${IDENTITY_LOGIN_LIMIT:10}
+    login-window: ${IDENTITY_LOGIN_WINDOW:PT5M}
+    secure-cookies: ${IDENTITY_SECURE_COOKIES:true}
+
+management:
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: livenessState,ping
+        readiness:
+          include: readinessState,db,redis
+      probes:
+        enabled: true
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${MARKETFLOW_ENVIRONMENT:local}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+
+logging:
+  structured:
+    format:
+      console: ecs
+  level:
+    root: INFO
+    com.marketflow: INFO
