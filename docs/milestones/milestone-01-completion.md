@@ -130,6 +130,7 @@ docker compose ps
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-infra.ps1
 docker compose stop/start redis and identity-service (controlled readiness failure drills)
 trivy filesystem --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed
+gitleaks dir (offline, read-only committed snapshot)
 git diff --check
 ```
 
@@ -181,4 +182,4 @@ git diff --check
 
 ## Final Status
 
-MILESTONE COMPLETE — READY TO PUSH FOR REVIEW
+MILESTONE COMPLETE — PUSHED FOR REVIEW
