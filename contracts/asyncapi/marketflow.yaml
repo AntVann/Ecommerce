@@ -3,12 +3,44 @@ info:
   title: MarketFlow Event Contracts
   version: 1.0.0
   description: >-
-    Foundation-level event envelope and compatibility rules. Domain channels and messages are
-    added contract-first by their owning milestones.
+    Versioned Identity and Seller domain events using the shared MarketFlow envelope.
 defaultContentType: application/json
-channels: {}
-operations: {}
+channels:
+  identityEvents:
+    address: marketflow.identity.events.v1
+    messages:
+      userRegistered: {$ref: "#/components/messages/UserRegistered"}
+      userDisabled: {$ref: "#/components/messages/UserDisabled"}
+  sellerEvents:
+    address: marketflow.seller.events.v1
+    messages:
+      sellerApproved: {$ref: "#/components/messages/SellerApproved"}
+      sellerRejected: {$ref: "#/components/messages/SellerRejected"}
+      sellerSuspended: {$ref: "#/components/messages/SellerSuspended"}
+operations:
+  publishIdentityEvents:
+    action: send
+    channel: {$ref: "#/channels/identityEvents"}
+  publishSellerEvents:
+    action: send
+    channel: {$ref: "#/channels/sellerEvents"}
 components:
+  messages:
+    UserRegistered:
+      name: identity.user-registered.v1
+      payload: {$ref: "../events/identity.user-registered.v1.schema.json"}
+    UserDisabled:
+      name: identity.user-disabled.v1
+      payload: {$ref: "../events/identity.user-disabled.v1.schema.json"}
+    SellerApproved:
+      name: seller.seller-approved.v1
+      payload: {$ref: "../events/seller.seller-approved.v1.schema.json"}
+    SellerRejected:
+      name: seller.seller-rejected.v1
+      payload: {$ref: "../events/seller.seller-rejected.v1.schema.json"}
+    SellerSuspended:
+      name: seller.seller-suspended.v1
+      payload: {$ref: "../events/seller.seller-suspended.v1.schema.json"}
   schemas:
     EventEnvelope:
       $ref: "../events/event-envelope.v1.schema.json"

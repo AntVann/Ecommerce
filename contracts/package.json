@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "npm run lint:openapi && npm run lint:asyncapi && npm run lint:events",
-    "lint:openapi": "redocly lint openapi/problem-details.yaml openapi/common-components.yaml",
+    "lint:openapi": "redocly lint openapi/problem-details.yaml openapi/common-components.yaml openapi/identity-service.yaml openapi/seller-service.yaml",
     "lint:asyncapi": "node scripts/validate-asyncapi.mjs",
     "lint:events": "node scripts/validate-events.mjs"
   },

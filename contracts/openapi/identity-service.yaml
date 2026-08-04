@@ -1,0 +1,272 @@
+openapi: 3.1.0
+info:
+  title: MarketFlow Identity API
+  version: 1.0.0
+  description: Registration, verification, authentication, session, and account administration.
+servers:
+  - url: http://localhost:8081
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register a customer account
+      operationId: registerCustomer
+      security: []
+      parameters:
+        - $ref: "./common-components.yaml#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RegisterRequest"}
+      responses:
+        "202": {$ref: "#/components/responses/Accepted"}
+        "400": {$ref: "#/components/responses/Problem"}
+  /api/v1/auth/email-verifications/confirm:
+    post:
+      summary: Confirm an email verification challenge
+      operationId: confirmEmailVerification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/VerifyEmailRequest"}
+      responses:
+        "204": {description: Email verified}
+        "400": {$ref: "#/components/responses/Problem"}
+  /api/v1/auth/email-verifications/resend:
+    post:
+      summary: Queue another email verification request
+      operationId: resendEmailVerification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/EmailRequest"}
+      responses:
+        "202": {$ref: "#/components/responses/Accepted"}
+  /api/v1/auth/login:
+    post:
+      summary: Authenticate an active customer
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/LoginRequest"}
+      responses:
+        "200":
+          description: Authenticated; refresh and CSRF cookies are also returned.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AccessTokenResponse"}
+        "401": {$ref: "#/components/responses/Problem"}
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/auth/refresh:
+    post:
+      summary: Rotate a refresh token and issue access
+      operationId: refreshSession
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "200":
+          description: Rotated session.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AccessTokenResponse"}
+        "401": {$ref: "#/components/responses/Problem"}
+        "403": {$ref: "#/components/responses/Problem"}
+  /api/v1/auth/logout:
+    post:
+      summary: Revoke the current session
+      operationId: logout
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": {description: Session invalidated and cookies cleared}
+        "403": {$ref: "#/components/responses/Problem"}
+  /api/v1/admin/users/{userId}/disable:
+    post:
+      summary: Disable a user account
+      operationId: disableUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        - $ref: "./common-components.yaml#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ReasonRequest"}
+      responses:
+        "204": {description: Account disabled or already disabled}
+        "401": {$ref: "#/components/responses/Problem"}
+        "403": {$ref: "#/components/responses/Problem"}
+        "404": {$ref: "#/components/responses/Problem"}
+  /internal/v1/email-verifications/{verificationId}/token:
+    post:
+      summary: Claim a verification token for delivery
+      operationId: claimEmailVerificationToken
+      security:
+        - internalKey: []
+      parameters:
+        - name: verificationId
+          in: path
+          required: true
+          schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+      responses:
+        "200":
+          description: One-time delivery token; never logged or persisted in plaintext.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/VerificationDelivery"}
+        "404": {$ref: "#/components/responses/Problem"}
+        "409": {$ref: "#/components/responses/Problem"}
+  /internal/v1/auth/token-status:
+    post:
+      summary: Inspect current principal and token state
+      operationId: inspectValidatedToken
+      security:
+        - internalKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TokenStatusRequest"}
+      responses:
+        "200":
+          description: Current principal state.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TokenStatusResponse"}
+        "401": {$ref: "#/components/responses/Problem"}
+  /internal/v1/users/{userId}:
+    get:
+      summary: Retrieve current user state for an internal consumer
+      operationId: getInternalUserSummary
+      security:
+        - internalKey: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+      responses:
+        "200":
+          description: Current user state without credential data.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UserSummaryResponse"}
+        "401": {$ref: "#/components/responses/Problem"}
+  /.well-known/jwks.json:
+    get:
+      summary: Retrieve current access-token public keys
+      operationId: getJsonWebKeySet
+      security: []
+      responses:
+        "200":
+          description: Public signing keys.
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+    internalKey: {type: apiKey, in: header, name: X-Internal-Service-Key}
+  parameters:
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: {type: string, minLength: 32, maxLength: 128}
+  responses:
+    Accepted: {description: Request accepted without disclosing account existence}
+    Problem:
+      description: RFC 9457 problem details.
+      content:
+        application/problem+json:
+          schema: {$ref: "./problem-details.yaml#/components/schemas/ProblemDetails"}
+    RateLimited:
+      description: Login attempt limit exceeded.
+      headers:
+        Retry-After: {$ref: "./common-components.yaml#/components/headers/RetryAfter"}
+      content:
+        application/problem+json:
+          schema: {$ref: "./problem-details.yaml#/components/schemas/ProblemDetails"}
+  schemas:
+    EmailRequest:
+      type: object
+      required: [email]
+      properties: {email: {type: string, format: email, maxLength: 320}}
+      additionalProperties: false
+    RegisterRequest:
+      allOf:
+        - $ref: "#/components/schemas/EmailRequest"
+        - type: object
+          required: [password]
+          properties: {password: {type: string, minLength: 12, maxLength: 256}}
+    LoginRequest:
+      allOf:
+        - $ref: "#/components/schemas/EmailRequest"
+        - type: object
+          required: [password]
+          properties: {password: {type: string, minLength: 1, maxLength: 256}}
+    VerifyEmailRequest:
+      type: object
+      required: [verificationId, token]
+      properties:
+        verificationId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        token: {type: string, minLength: 32, maxLength: 256}
+      additionalProperties: false
+    AccessTokenResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn]
+      properties:
+        accessToken: {type: string}
+        tokenType: {const: Bearer}
+        expiresIn: {type: integer, minimum: 1}
+      additionalProperties: false
+    ReasonRequest:
+      type: object
+      required: [reason]
+      properties: {reason: {type: string, minLength: 3, maxLength: 500}}
+      additionalProperties: false
+    VerificationDelivery:
+      type: object
+      required: [verificationId, token, expiresAt]
+      properties:
+        verificationId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        token: {type: string}
+        expiresAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+      additionalProperties: false
+    TokenStatusRequest:
+      type: object
+      required: [subject, tokenId, issuedAt]
+      properties:
+        subject: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        tokenId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        issuedAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+      additionalProperties: false
+    TokenStatusResponse:
+      type: object
+      required: [active, roles]
+      properties:
+        active: {type: boolean}
+        roles: {type: array, uniqueItems: true, items: {type: string}}
+      additionalProperties: false
+    UserSummaryResponse:
+      type: object
+      required: [userId, active, roles]
+      properties:
+        userId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        active: {type: boolean}
+        roles: {type: array, uniqueItems: true, items: {type: string}}
+      additionalProperties: false

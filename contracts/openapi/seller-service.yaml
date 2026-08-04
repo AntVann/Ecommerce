@@ -1,0 +1,214 @@
+openapi: 3.1.0
+info:
+  title: MarketFlow Seller API
+  version: 1.0.0
+  description: Seller application, review, suspension, membership, and ownership operations.
+servers:
+  - url: http://localhost:8082
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/seller-applications:
+    post:
+      summary: Submit a seller application
+      operationId: submitSellerApplication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SellerApplicationRequest"}
+      responses:
+        "201":
+          description: Application created.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SellerResponse"}
+        "409": {$ref: "#/components/responses/Problem"}
+  /api/v1/sellers/{sellerId}:
+    get:
+      summary: Get an owned or administered seller
+      operationId: getSeller
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+      responses:
+        "200":
+          description: Seller visible to its member or an administrator.
+          headers:
+            ETag: {$ref: "./common-components.yaml#/components/headers/ETag"}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SellerResponse"}
+        "404": {$ref: "#/components/responses/Problem"}
+  /api/v1/sellers/{sellerId}/members:
+    post:
+      summary: Add a seller staff member
+      operationId: addSellerMember
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+        - $ref: "./common-components.yaml#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AddMemberRequest"}
+      responses:
+        "201": {description: Staff membership created}
+        "403": {$ref: "#/components/responses/Problem"}
+        "409": {$ref: "#/components/responses/Problem"}
+  /api/v1/sellers/{sellerId}/members/{userId}:
+    patch:
+      summary: Change a seller staff role
+      operationId: changeSellerMemberRole
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "./common-components.yaml#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ChangeRoleRequest"}
+      responses:
+        "204": {description: Role changed}
+        "403": {$ref: "#/components/responses/Problem"}
+        "404": {$ref: "#/components/responses/Problem"}
+        "412": {$ref: "#/components/responses/Problem"}
+    delete:
+      summary: Remove a seller staff member
+      operationId: removeSellerMember
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "./common-components.yaml#/components/parameters/IfMatch"
+      responses:
+        "204": {description: Membership removed or already absent}
+        "403": {$ref: "#/components/responses/Problem"}
+  /api/v1/admin/seller-applications:
+    get:
+      summary: List seller applications for review
+      operationId: listSellerApplications
+      parameters:
+        - name: status
+          in: query
+          schema: {$ref: "#/components/schemas/SellerStatus"}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 25}
+      responses:
+        "200":
+          description: Applications visible to administrators.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/SellerResponse"}}
+        "403": {$ref: "#/components/responses/Problem"}
+  /api/v1/admin/sellers/{sellerId}/approve:
+    post:
+      summary: Approve a pending seller
+      operationId: approveSeller
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+        - $ref: "./common-components.yaml#/components/parameters/IdempotencyKey"
+        - $ref: "./common-components.yaml#/components/parameters/IfMatch"
+      responses:
+        "200": {$ref: "#/components/responses/SellerChanged"}
+        "409": {$ref: "#/components/responses/Problem"}
+        "412": {$ref: "#/components/responses/Problem"}
+  /api/v1/admin/sellers/{sellerId}/reject:
+    post:
+      summary: Reject a pending seller
+      operationId: rejectSeller
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+        - $ref: "./common-components.yaml#/components/parameters/IdempotencyKey"
+        - $ref: "./common-components.yaml#/components/parameters/IfMatch"
+      requestBody: {$ref: "#/components/requestBodies/Reason"}
+      responses:
+        "200": {$ref: "#/components/responses/SellerChanged"}
+        "409": {$ref: "#/components/responses/Problem"}
+        "412": {$ref: "#/components/responses/Problem"}
+  /api/v1/admin/sellers/{sellerId}/suspend:
+    post:
+      summary: Suspend an approved seller
+      operationId: suspendSeller
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+        - $ref: "./common-components.yaml#/components/parameters/IdempotencyKey"
+        - $ref: "./common-components.yaml#/components/parameters/IfMatch"
+      requestBody: {$ref: "#/components/requestBodies/Reason"}
+      responses:
+        "200": {$ref: "#/components/responses/SellerChanged"}
+        "409": {$ref: "#/components/responses/Problem"}
+        "412": {$ref: "#/components/responses/Problem"}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    SellerId:
+      name: sellerId
+      in: path
+      required: true
+      schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+  requestBodies:
+    Reason:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties: {reason: {type: string, minLength: 3, maxLength: 500}}
+            additionalProperties: false
+  responses:
+    Problem:
+      description: RFC 9457 problem details.
+      content:
+        application/problem+json:
+          schema: {$ref: "./problem-details.yaml#/components/schemas/ProblemDetails"}
+    SellerChanged:
+      description: Seller state changed or an idempotent prior result returned.
+      headers:
+        ETag: {$ref: "./common-components.yaml#/components/headers/ETag"}
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/SellerResponse"}
+  schemas:
+    SellerStatus:
+      type: string
+      enum: [PENDING_REVIEW, APPROVED, REJECTED, SUSPENDED, CLOSED]
+    SellerApplicationRequest:
+      type: object
+      required: [displayName, legalName, countryCode]
+      properties:
+        displayName: {type: string, minLength: 2, maxLength: 120}
+        legalName: {type: string, minLength: 2, maxLength: 200}
+        countryCode: {type: string, pattern: "^[A-Z]{2}$"}
+      additionalProperties: false
+    SellerResponse:
+      type: object
+      required: [sellerId, displayName, status, version]
+      properties:
+        sellerId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        displayName: {type: string}
+        status: {$ref: "#/components/schemas/SellerStatus"}
+        version: {type: integer, minimum: 1}
+      additionalProperties: false
+    SellerRole:
+      type: string
+      enum: [MANAGER, STAFF]
+    AddMemberRequest:
+      type: object
+      required: [userId, role]
+      properties:
+        userId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        role: {$ref: "#/components/schemas/SellerRole"}
+      additionalProperties: false
+    ChangeRoleRequest:
+      type: object
+      required: [role]
+      properties: {role: {$ref: "#/components/schemas/SellerRole"}}
+      additionalProperties: false
