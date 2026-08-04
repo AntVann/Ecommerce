@@ -128,6 +128,6 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v5
       - name: Reject vulnerable dependency changes
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
