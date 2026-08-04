@@ -1,0 +1,15 @@
+.env
+.idea/
+.vscode/
+*.iml
+*.log
+target/
+**/target/
+node_modules/
+.m2-cache/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+Thumbs.db
+.docker/
