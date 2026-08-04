@@ -41,3 +41,17 @@ introduced. The sample service and local credentials are not production deployab
 
 The Compose signing key is ephemeral and local-development-only. Production key management,
 service workload identity, and network policy are deferred to the cloud deployment milestone.
+
+## Catalog, Inventory, and Search threats
+
+| Threat | Milestone 2 control |
+|---|---|
+| Seller modifies another tenant's product or stock | Live Seller permission decision plus seller ID in every ownership query; protected probes return 404 |
+| Suspended seller remains publicly visible | Version-aware Seller projections remove public Catalog/Search visibility |
+| Duplicate or conflicting SKU | Canonical seller-scoped database uniqueness constraint |
+| Floating-point price corruption | `BigDecimal`, ISO currency validation, and `NUMERIC(19,4)` persistence |
+| Oversell or negative stock | Database check constraints and conditional atomic reservation/adjustment SQL |
+| Duplicate command or event | Idempotency records, processed-message inboxes, version-aware projections, and idempotent OpenSearch writes |
+| Product image path injection | Seller/product-scoped object keys, content-type allow-list, size and dimension constraints; bytes remain in object storage |
+| Search becomes an authority | Direct detail remains Catalog-owned and Search can be deleted/rebuilt through an alias switch |
+| Internal API spoofing | Constant-time service-key comparison in local runtime; workload identity remains the production target |

@@ -37,7 +37,7 @@ function Get-ResponseContent {
     return [string]$Response.Content
 }
 
-$smokeCorrelationId = 'm1-infrastructure-smoke'
+$smokeCorrelationId = 'm2-infrastructure-smoke'
 $readiness = Wait-Http -Name 'sample readiness' `
     -Uri 'http://localhost:8080/actuator/health/readiness' `
     -Headers @{ 'X-Correlation-ID' = $smokeCorrelationId }
@@ -60,6 +60,18 @@ $sellerReadiness = Wait-Http -Name 'seller readiness' `
 if ((Get-ResponseContent -Response $sellerReadiness) -notmatch '"status"\s*:\s*"UP"') {
     throw 'Seller-service readiness did not report UP.'
 }
+foreach ($service in @(
+    @{ Name = 'catalog'; Port = 8083 },
+    @{ Name = 'inventory'; Port = 8084 },
+    @{ Name = 'search'; Port = 8085 }
+)) {
+    $response = Wait-Http -Name "$($service.Name) readiness" `
+        -Uri "http://localhost:$($service.Port)/actuator/health/readiness" `
+        -Headers @{ 'X-Correlation-ID' = $smokeCorrelationId }
+    if ((Get-ResponseContent -Response $response) -notmatch '"status"\s*:\s*"UP"') {
+        throw "$($service.Name) readiness did not report UP."
+    }
+}
 
 $metrics = Wait-Http -Name 'sample metrics' -Uri 'http://localhost:8080/actuator/prometheus'
 if ((Get-ResponseContent -Response $metrics) -notmatch 'jvm_info') {
@@ -80,7 +92,7 @@ $sampleTarget = $targetsJson.data.activeTargets | Where-Object { $_.labels.job -
 if ($null -eq $sampleTarget -or $sampleTarget.health -ne 'up') {
     throw 'Prometheus is not scraping the sample service successfully.'
 }
-foreach ($job in @('identity-service', 'seller-service')) {
+foreach ($job in @('identity-service', 'seller-service', 'catalog-service', 'inventory-service', 'search-service')) {
     $target = $targetsJson.data.activeTargets | Where-Object { $_.labels.job -eq $job }
     if ($null -eq $target -or $target.health -ne 'up') {
         throw "Prometheus is not scraping $job successfully."
@@ -98,9 +110,15 @@ if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL readiness check failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Identity PostgreSQL readiness check failed.' }
 & docker compose exec -T seller-postgres pg_isready -U seller_app -d marketflow_seller
 if ($LASTEXITCODE -ne 0) { throw 'Seller PostgreSQL readiness check failed.' }
+& docker compose exec -T catalog-postgres pg_isready -U catalog_app -d marketflow_catalog
+if ($LASTEXITCODE -ne 0) { throw 'Catalog PostgreSQL readiness check failed.' }
+& docker compose exec -T inventory-postgres pg_isready -U inventory_app -d marketflow_inventory
+if ($LASTEXITCODE -ne 0) { throw 'Inventory PostgreSQL readiness check failed.' }
+& docker compose exec -T search-postgres pg_isready -U search_app -d marketflow_search
+if ($LASTEXITCODE -ne 0) { throw 'Search PostgreSQL readiness check failed.' }
 $kafkaTopics = (& docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list) -join [Environment]::NewLine
-if ($LASTEXITCODE -ne 0 -or $kafkaTopics -notmatch 'marketflow.identity.events.v1' -or $kafkaTopics -notmatch 'marketflow.seller.events.v1') {
-    throw 'Milestone 1 Kafka topics were not provisioned.'
+if ($LASTEXITCODE -ne 0 -or $kafkaTopics -notmatch 'marketflow.identity.events.v1' -or $kafkaTopics -notmatch 'marketflow.seller.events.v1' -or $kafkaTopics -notmatch 'marketflow.catalog.events.v1' -or $kafkaTopics -notmatch 'marketflow.inventory.events.v1') {
+    throw 'Milestone 2 Kafka topics were not provisioned.'
 }
 & docker compose exec -T rabbitmq rabbitmq-diagnostics -q ping
 if ($LASTEXITCODE -ne 0) { throw 'RabbitMQ readiness check failed.' }
@@ -114,10 +132,10 @@ if ($null -eq $traceJson.traces -or $traceJson.traces.Count -lt 1) {
     throw 'No sample-service trace reached Tempo.'
 }
 
-$serviceLogs = (& docker compose logs --no-color --tail 300 sample-service identity-service seller-service) -join [Environment]::NewLine
-if ($LASTEXITCODE -ne 0 -or $serviceLogs -notmatch '"correlationId":"m1-infrastructure-smoke"') {
+$serviceLogs = (& docker compose logs --no-color --tail 300 sample-service identity-service seller-service catalog-service inventory-service search-service) -join [Environment]::NewLine
+if ($LASTEXITCODE -ne 0 -or $serviceLogs -notmatch '"correlationId":"m2-infrastructure-smoke"') {
     throw 'Structured service logs did not contain the smoke correlation ID.'
 }
 Write-Host 'PASS structured correlation log'
 
-Write-Host 'All MarketFlow Milestone 1 infrastructure smoke checks passed.'
+Write-Host 'All MarketFlow Milestone 2 infrastructure smoke checks passed.'
