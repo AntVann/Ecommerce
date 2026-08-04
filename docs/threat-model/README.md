@@ -21,3 +21,23 @@ storage, and observability connections remain private and authenticated in deplo
 
 Feature-specific threat modeling and authorization tests are required as business capabilities are
 introduced. The sample service and local credentials are not production deployables.
+
+## Identity and Seller threats
+
+| Threat | Milestone 1 control |
+|---|---|
+| Credential database disclosure | Argon2id adaptive hashes with unique salts; raw passwords never persisted or logged |
+| Account enumeration | Equivalent registration behavior and generic authentication failures |
+| Credential stuffing and brute force | Redis-backed account and source limits, temporary lock window, audit event, `Retry-After` |
+| Refresh-token theft or replay | Random opaque values, digest-only storage, atomic rotation, family-wide reuse revocation |
+| Access-token forgery or stale privilege | RS256, `kid`/JWKS, issuer/audience/time validation, short expiry, live sensitive-operation check |
+| Cookie request forgery | Secure HttpOnly SameSite refresh cookie and double-submit CSRF validation on refresh/logout |
+| Disabled principal continues operating | Session-family revocation, issued-before timestamp, JTI revocation, live Identity check |
+| Customer invokes administrator operation | Coarse JWT role check plus live Identity role confirmation |
+| Seller crosses tenant boundary | Membership lookup includes both authenticated user and seller ID; protected probes return 404 |
+| Staff changes seller membership | Only OWNER membership has `SELLER_MEMBER_MANAGE`; owner cannot be removed through staff API |
+| Sensitive telemetry | No passwords, raw tokens, email addresses, or free-text reasons in metrics or event payloads |
+| Administrative repudiation | Append-only security events and seller status history record actor, reason, time, and correlation |
+
+The Compose signing key is ephemeral and local-development-only. Production key management,
+service workload identity, and network policy are deferred to the cloud deployment milestone.
