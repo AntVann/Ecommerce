@@ -1,0 +1,21 @@
+{
+  "name": "@marketflow/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Validation tooling for MarketFlow REST and event contracts",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint": "npm run lint:openapi && npm run lint:asyncapi && npm run lint:events",
+    "lint:openapi": "redocly lint openapi/problem-details.yaml openapi/common-components.yaml",
+    "lint:asyncapi": "node scripts/validate-asyncapi.mjs",
+    "lint:events": "node scripts/validate-events.mjs"
+  },
+  "devDependencies": {
+    "@asyncapi/parser": "3.6.0",
+    "@redocly/cli": "2.40.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}

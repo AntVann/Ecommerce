@@ -1,0 +1,15 @@
+{
+  "eventId": "0198fa2f-bd53-7ad2-86b7-9d6efd644a31",
+  "eventType": "foundation.sample-started.v1",
+  "aggregateType": "Sample",
+  "aggregateId": "0198fa2f-bd53-7ad2-86b7-9d6efd644a32",
+  "aggregateVersion": 1,
+  "occurredAt": "2026-08-03T23:30:00Z",
+  "correlationId": "m0-contract-example",
+  "causationId": null,
+  "producer": "sample-service",
+  "schemaVersion": 1,
+  "data": {
+    "status": "STARTED"
+  }
+}
