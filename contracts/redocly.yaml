@@ -1,0 +1,8 @@
+extends:
+  - recommended
+rules:
+  info-license: off
+  no-empty-servers: off
+  no-unused-components: warn
+  operation-operationId-unique: error
+  security-defined: error

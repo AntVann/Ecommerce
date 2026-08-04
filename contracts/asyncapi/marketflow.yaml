@@ -1,0 +1,14 @@
+asyncapi: 3.0.0
+info:
+  title: MarketFlow Event Contracts
+  version: 1.0.0
+  description: >-
+    Foundation-level event envelope and compatibility rules. Domain channels and messages are
+    added contract-first by their owning milestones.
+defaultContentType: application/json
+channels: {}
+operations: {}
+components:
+  schemas:
+    EventEnvelope:
+      $ref: "../events/event-envelope.v1.schema.json"

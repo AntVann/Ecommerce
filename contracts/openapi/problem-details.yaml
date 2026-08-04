@@ -1,0 +1,63 @@
+openapi: 3.1.0
+info:
+  title: MarketFlow Problem Details
+  version: 1.0.0
+  description: Stable RFC 9457-compatible error representation for MarketFlow REST APIs.
+paths: {}
+components:
+  schemas:
+    ProblemDetails:
+      type: object
+      description: A machine-readable error response with a stable MarketFlow error code.
+      required:
+        - type
+        - title
+        - status
+        - code
+        - correlationId
+        - errors
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: URI identifying the problem type.
+        title:
+          type: string
+          minLength: 1
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+          pattern: "^[A-Z][A-Z0-9_]+_[0-9]{3}$"
+          description: Stable application error code.
+        correlationId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+      additionalProperties: true
+    FieldError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+      additionalProperties: false

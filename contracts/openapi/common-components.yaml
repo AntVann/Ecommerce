@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: MarketFlow Common API Components
+  version: 1.0.0
+  description: Shared transport conventions for MarketFlow REST contracts.
+paths: {}
+components:
+  headers:
+    CorrelationId:
+      description: Correlates an operation across HTTP, logs, traces, commands, and events.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: "^[A-Za-z0-9._:-]+$"
+    ETag:
+      description: Opaque version used for optimistic concurrency.
+      schema:
+        type: string
+    RetryAfter:
+      description: Delay in seconds before a safe retry.
+      schema:
+        type: integer
+        minimum: 0
+  parameters:
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      description: Client correlation value; the server creates one when absent or invalid.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: "^[A-Za-z0-9._:-]+$"
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Opaque operation-scoped key associated with a normalized request hash.
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+        pattern: "^[A-Za-z0-9._:-]+$"
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Expected aggregate version represented as an opaque entity tag.
+      schema:
+        type: string
+  schemas:
+    Identifier:
+      type: string
+      format: uuid
+      description: UUID identifier; UUIDv7 is preferred for newly generated IDs.
+    UtcTimestamp:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp normalized to UTC.
+      examples:
+        - "2026-08-03T23:30:00Z"
+    Money:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: string
+          pattern: "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+          description: Decimal value serialized as a string; never a binary floating-point number.
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: ISO 4217 currency code.
+      additionalProperties: false
+    ProblemDetails:
+      $ref: "./problem-details.yaml#/components/schemas/ProblemDetails"
