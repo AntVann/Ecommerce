@@ -7,6 +7,9 @@ COPY config/ config/
 COPY services/sample-service/pom.xml services/sample-service/pom.xml
 COPY services/identity-service/pom.xml services/identity-service/pom.xml
 COPY services/seller-service/pom.xml services/seller-service/pom.xml
+COPY services/catalog-service/pom.xml services/catalog-service/pom.xml
+COPY services/inventory-service/pom.xml services/inventory-service/pom.xml
+COPY services/search-service/pom.xml services/search-service/pom.xml
 RUN chmod +x mvnw && ./mvnw -B -pl services/identity-service -am dependency:go-offline
 COPY services/identity-service/src services/identity-service/src
 RUN ./mvnw -B -pl services/identity-service -am package -DskipTests
