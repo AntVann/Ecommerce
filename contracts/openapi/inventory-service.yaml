@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info: {title: MarketFlow Inventory API, version: 1.0.0, description: "Seller inventory availability, adjustments, and movement history."}
+servers: [{url: "http://localhost:8084"}]
+security: [{bearerAuth: []}]
+paths:
+  /api/v1/sellers/{sellerId}/inventory:
+    get:
+      summary: List seller inventory availability
+      operationId: listSellerInventory
+      parameters: [{$ref: "#/components/parameters/SellerId"}]
+      responses: {"200": {description: Inventory availability, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/InventoryItem"}}}}}}
+  /api/v1/sellers/{sellerId}/inventory/{variantId}/adjustments:
+    post:
+      summary: Apply an audited stock adjustment
+      operationId: adjustInventory
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/VariantId"}, {$ref: "./common-components.yaml#/components/parameters/IfMatch"}, {$ref: "./common-components.yaml#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/AdjustmentRequest"}}}}
+      responses: {"200": {description: Adjusted inventory, content: {application/json: {schema: {$ref: "#/components/schemas/InventoryItem"}}}}, "409": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/inventory/{variantId}/movements:
+    get:
+      summary: List immutable stock movements
+      operationId: listStockMovements
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/VariantId"}]
+      responses: {"200": {description: Immutable movement history}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}}
+  parameters:
+    SellerId: {name: sellerId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+    VariantId: {name: variantId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+  responses:
+    Problem: {description: RFC 9457 problem details, content: {application/problem+json: {schema: {$ref: "./problem-details.yaml#/components/schemas/ProblemDetails"}}}}
+  schemas:
+    InventoryItem: {type: object, required: [variantId, sellerId, onHand, reserved, version, available], properties: {variantId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, sellerId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, onHand: {type: integer, minimum: 0}, reserved: {type: integer, minimum: 0}, available: {type: integer, minimum: 0}, version: {type: integer, minimum: 1}}, additionalProperties: true}
+    AdjustmentRequest: {type: object, required: [quantityDelta, reasonCode], properties: {quantityDelta: {type: integer}, reasonCode: {type: string, minLength: 1, maxLength: 80}}, additionalProperties: false}

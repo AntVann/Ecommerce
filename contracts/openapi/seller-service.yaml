@@ -8,6 +8,18 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /internal/v1/sellers/{sellerId}/authorization:
+    get:
+      summary: Authorize a seller-scoped service operation
+      operationId: authorizeSellerOperation
+      security: [{internalServiceKey: []}]
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+        - {name: userId, in: query, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+        - {name: permission, in: query, required: true, schema: {type: string, enum: [CATALOG_WRITE, INVENTORY_WRITE]}}
+      responses:
+        "200": {description: Current seller status and authorization decision}
+        "401": {$ref: "#/components/responses/Problem"}
   /api/v1/seller-applications:
     post:
       summary: Submit a seller application
@@ -142,6 +154,7 @@ paths:
 components:
   securitySchemes:
     bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+    internalServiceKey: {type: apiKey, in: header, name: X-Internal-Service-Key}
   parameters:
     SellerId:
       name: sellerId

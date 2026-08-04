@@ -3,7 +3,7 @@ info:
   title: MarketFlow Event Contracts
   version: 1.0.0
   description: >-
-    Versioned Identity and Seller domain events using the shared MarketFlow envelope.
+    Versioned Identity, Seller, Catalog, and Inventory events using the shared MarketFlow envelope.
 defaultContentType: application/json
 channels:
   identityEvents:
@@ -17,6 +17,20 @@ channels:
       sellerApproved: {$ref: "#/components/messages/SellerApproved"}
       sellerRejected: {$ref: "#/components/messages/SellerRejected"}
       sellerSuspended: {$ref: "#/components/messages/SellerSuspended"}
+  catalogEvents:
+    address: marketflow.catalog.events.v1
+    messages:
+      productPublished: {$ref: "#/components/messages/ProductPublished"}
+      productUpdated: {$ref: "#/components/messages/ProductUpdated"}
+      productDeactivated: {$ref: "#/components/messages/ProductDeactivated"}
+      priceChanged: {$ref: "#/components/messages/PriceChanged"}
+  inventoryEvents:
+    address: marketflow.inventory.events.v1
+    messages:
+      inventoryAdjusted: {$ref: "#/components/messages/InventoryAdjusted"}
+      inventoryReserved: {$ref: "#/components/messages/InventoryReserved"}
+      inventoryReservationFailed: {$ref: "#/components/messages/InventoryReservationFailed"}
+      inventoryReleased: {$ref: "#/components/messages/InventoryReleased"}
 operations:
   publishIdentityEvents:
     action: send
@@ -24,6 +38,12 @@ operations:
   publishSellerEvents:
     action: send
     channel: {$ref: "#/channels/sellerEvents"}
+  publishCatalogEvents:
+    action: send
+    channel: {$ref: "#/channels/catalogEvents"}
+  publishInventoryEvents:
+    action: send
+    channel: {$ref: "#/channels/inventoryEvents"}
 components:
   messages:
     UserRegistered:
@@ -41,6 +61,30 @@ components:
     SellerSuspended:
       name: seller.seller-suspended.v1
       payload: {$ref: "../events/seller.seller-suspended.v1.schema.json"}
+    ProductPublished:
+      name: catalog.product-published.v1
+      payload: {$ref: "../events/catalog.product-published.v1.schema.json"}
+    ProductUpdated:
+      name: catalog.product-updated.v1
+      payload: {$ref: "../events/catalog.product-updated.v1.schema.json"}
+    ProductDeactivated:
+      name: catalog.product-deactivated.v1
+      payload: {$ref: "../events/catalog.product-deactivated.v1.schema.json"}
+    PriceChanged:
+      name: catalog.price-changed.v1
+      payload: {$ref: "../events/catalog.price-changed.v1.schema.json"}
+    InventoryAdjusted:
+      name: inventory.inventory-adjusted.v1
+      payload: {$ref: "../events/inventory.inventory-adjusted.v1.schema.json"}
+    InventoryReserved:
+      name: inventory.inventory-reserved.v1
+      payload: {$ref: "../events/inventory.inventory-reserved.v1.schema.json"}
+    InventoryReservationFailed:
+      name: inventory.inventory-reservation-failed.v1
+      payload: {$ref: "../events/inventory.inventory-reservation-failed.v1.schema.json"}
+    InventoryReleased:
+      name: inventory.inventory-released.v1
+      payload: {$ref: "../events/inventory.inventory-released.v1.schema.json"}
   schemas:
     EventEnvelope:
       $ref: "../events/event-envelope.v1.schema.json"

@@ -1,0 +1,97 @@
+openapi: 3.1.0
+info: {title: MarketFlow Catalog API, version: 1.0.0, description: Seller catalog management and authoritative product detail.}
+servers: [{url: "http://localhost:8083"}]
+security: [{bearerAuth: []}]
+paths:
+  /api/v1/categories:
+    get:
+      summary: List active product categories
+      operationId: listCategories
+      security: []
+      responses: {"200": {description: Active categories}}
+  /api/v1/products/{productId}:
+    get:
+      summary: Get an authoritative published product
+      operationId: getPublishedProduct
+      security: []
+      parameters: [{$ref: "#/components/parameters/ProductId"}]
+      responses: {"200": {$ref: "#/components/responses/ProductView"}, "404": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/products:
+    post:
+      summary: Create a seller product draft
+      operationId: createProduct
+      parameters: [{$ref: "#/components/parameters/SellerId"}]
+      requestBody: {$ref: "#/components/requestBodies/Product"}
+      responses: {"201": {$ref: "#/components/responses/Product"}, "403": {$ref: "#/components/responses/Problem"}, "409": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/products/{productId}:
+    patch:
+      summary: Update a seller product
+      operationId: updateProduct
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}, {$ref: "./common-components.yaml#/components/parameters/IfMatch"}]
+      requestBody: {$ref: "#/components/requestBodies/Product"}
+      responses: {"200": {$ref: "#/components/responses/Product"}, "412": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/products/{productId}/variants:
+    post:
+      summary: Add a product variant
+      operationId: addProductVariant
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/VariantRequest"}}}}
+      responses: {"201": {description: Variant created}, "409": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/products/{productId}/images:
+    post:
+      summary: Add product image metadata
+      operationId: addProductImageMetadata
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/ImageRequest"}}}}
+      responses: {"201": {description: Image metadata created}, "400": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/products/{productId}/variants/{variantId}/price:
+    patch:
+      summary: Change a variant price
+      operationId: changeVariantPrice
+      parameters:
+        - {$ref: "#/components/parameters/SellerId"}
+        - {$ref: "#/components/parameters/ProductId"}
+        - {name: variantId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+        - {$ref: "./common-components.yaml#/components/parameters/IfMatch"}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/Money"}}}}
+      responses: {"200": {description: Price changed}, "412": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/products/{productId}/publish:
+    post:
+      summary: Publish a complete product
+      operationId: publishProduct
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}, {$ref: "./common-components.yaml#/components/parameters/IfMatch"}]
+      responses: {"200": {$ref: "#/components/responses/Product"}, "422": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/products/{productId}/deactivate:
+    post:
+      summary: Deactivate a published product
+      operationId: deactivateProduct
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}, {$ref: "./common-components.yaml#/components/parameters/IfMatch"}]
+      responses: {"200": {$ref: "#/components/responses/Product"}}
+  /api/v1/sellers/{sellerId}/products/{productId}/archive:
+    post:
+      summary: Archive an inactive product
+      operationId: archiveProduct
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}, {$ref: "./common-components.yaml#/components/parameters/IfMatch"}]
+      responses: {"200": {$ref: "#/components/responses/Product"}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}}
+  parameters:
+    SellerId: {name: sellerId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+    ProductId: {name: productId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+  requestBodies:
+    Product: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/ProductRequest"}}}}
+  responses:
+    Problem: {description: RFC 9457 problem details, content: {application/problem+json: {schema: {$ref: "./problem-details.yaml#/components/schemas/ProblemDetails"}}}}
+    Product: {description: Product aggregate, headers: {ETag: {$ref: "./common-components.yaml#/components/headers/ETag"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ProductResponse"}}}}
+    ProductView: {description: Published product with variants and images, content: {application/json: {schema: {type: object}}}}
+  schemas:
+    ProductStatus: {type: string, enum: [DRAFT, ACTIVE, INACTIVE, ARCHIVED]}
+    ProductRequest:
+      type: object
+      required: [categoryId, title, description]
+      properties: {categoryId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, title: {type: string, minLength: 1, maxLength: 200}, description: {type: string, minLength: 1, maxLength: 4000}, attributes: {type: object, additionalProperties: {type: string}}}
+      additionalProperties: false
+    ProductResponse: {type: object, required: [id, sellerId, categoryId, title, description, status, version], properties: {id: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, sellerId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, categoryId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, title: {type: string}, description: {type: string}, status: {$ref: "#/components/schemas/ProductStatus"}, version: {type: integer, minimum: 1}}, additionalProperties: true}
+    Money: {type: object, required: [amount, currency], properties: {amount: {type: string, pattern: "^[0-9]+(\\.[0-9]{1,4})?$"}, currency: {type: string, pattern: "^[A-Z]{3}$"}}, additionalProperties: false}
+    VariantRequest: {type: object, required: [sku, name, price], properties: {sku: {type: string, pattern: "^[A-Za-z0-9._-]{1,80}$"}, name: {type: string, maxLength: 160}, attributes: {type: object, additionalProperties: {type: string}}, price: {$ref: "#/components/schemas/Money"}}, additionalProperties: false}
+    ImageRequest: {type: object, required: [objectKey, contentType, byteSize, width, height, altText, displayOrder], properties: {objectKey: {type: string, maxLength: 500}, contentType: {type: string, enum: [image/jpeg, image/png, image/webp]}, byteSize: {type: integer, minimum: 1, maximum: 10485760}, width: {type: integer, minimum: 1}, height: {type: integer, minimum: 1}, altText: {type: string, minLength: 1, maxLength: 300}, displayOrder: {type: integer, minimum: 0}}, additionalProperties: false}
