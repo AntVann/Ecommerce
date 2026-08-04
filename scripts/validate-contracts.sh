@@ -22,4 +22,3 @@ docker run --rm \
   --workdir /contracts \
   "$NODE_IMAGE" \
   sh -c 'npm ci --ignore-scripts && npm run lint'
-

@@ -20,4 +20,3 @@ datasources:
         datasourceUid: prometheus
       serviceMap:
         datasourceUid: prometheus
-

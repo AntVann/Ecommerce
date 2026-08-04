@@ -10,4 +10,3 @@ the producing bounded context and receives its own versioned schema before imple
 - Producers write events through a transactional outbox.
 - Consumers store `(consumerName, eventId)` with the business mutation in one local transaction.
 - Payloads minimize or redact personal and sensitive information.
-

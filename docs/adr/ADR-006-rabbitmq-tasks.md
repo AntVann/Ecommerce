@@ -1,6 +1,6 @@
 # ADR-006: RabbitMQ for task queues
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Use least-privilege virtual-host permissions and never place secrets in messages
 Queue depth, oldest age, consumer health, retries, and DLQ size are monitored.
 ## Migration / rollback
 Queue bindings support side-by-side workers; rollback preserves compatible job payload versions.
-

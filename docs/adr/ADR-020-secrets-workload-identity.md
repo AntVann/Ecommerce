@@ -1,6 +1,6 @@
 # ADR-020: Secrets and workload identity strategy
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context

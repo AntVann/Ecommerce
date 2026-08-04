@@ -1,6 +1,6 @@
 # ADR-019: API and event compatibility and versioning
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Compatibility never permits weaker authorization, secret exposure, or unsafe val
 Old and new versions may coexist; usage and deprecation are observable.
 ## Migration / rollback
 Deploy consumers before additive producers and retain old handlers until usage reaches zero.
-

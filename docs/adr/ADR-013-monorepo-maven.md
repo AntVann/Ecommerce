@@ -1,6 +1,6 @@
 # ADR-013: Monorepo and Maven parent
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Central scans and dependency management reduce drift while service secrets remai
 CI detects changed paths but can run the full reactor for compatibility.
 ## Migration / rollback
 Services may split repositories later without changing their contracts or data ownership.
-

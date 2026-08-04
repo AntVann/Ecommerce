@@ -1,6 +1,6 @@
 # ADR-012: JWT access tokens and rotating opaque refresh tokens
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Issuer, audience, expiry, signature, CSRF, rotation, rate limits, and safe loggi
 Key rotation, token reuse, failed login, and denied authorization are observable.
 ## Migration / rollback
 Verification keys overlap during rotation; claim changes remain backward compatible.
-

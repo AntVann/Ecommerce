@@ -15,4 +15,3 @@ engineering plan, then code.
 - Breaking REST or event changes require a new version and a migration plan.
 
 Run `scripts/validate-contracts.sh` or `scripts/validate-contracts.ps1` from the repository root.
-

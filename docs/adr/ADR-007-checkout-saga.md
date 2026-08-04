@@ -1,6 +1,6 @@
 # ADR-007: Orchestrated Saga for checkout
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Commands carry authenticated identity context and opaque payment tokens only.
 Saga state, duration, failures, and manual-review counts are dashboarded and alerted.
 ## Migration / rollback
 Workflow versions coexist for in-flight orders; deployments retain handlers for active versions.
-

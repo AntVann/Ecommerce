@@ -1,6 +1,6 @@
 # ADR-016: Simulated payment provider for MVP
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Real card numbers and security codes are rejected, never stored, and never logge
 Simulator scenarios are deterministic, observable, and usable in failure tests.
 ## Migration / rollback
 A future provider implements the same port and requires a new security/compliance decision.
-

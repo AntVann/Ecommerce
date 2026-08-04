@@ -1,6 +1,6 @@
 # ADR-009: REST and OpenAPI for synchronous contracts
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Request DTOs, bounds, ownership checks, and allow-listed sorting prevent mass as
 Every client has deadlines, safe retry policy, telemetry, and stable error handling.
 ## Migration / rollback
 Breaking changes use a new API version or documented compatibility window.
-

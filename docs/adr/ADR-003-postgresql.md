@@ -1,6 +1,6 @@
 # ADR-003: PostgreSQL as primary relational database
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Connections require TLS outside local development and least-privilege service ro
 Backups, point-in-time recovery, pool metrics, and restore tests are required.
 ## Migration / rollback
 Use expand-and-contract migrations and forward recovery for irreversible changes.
-

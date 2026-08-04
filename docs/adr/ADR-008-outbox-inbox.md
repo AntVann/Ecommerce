@@ -1,6 +1,6 @@
 # ADR-008: Transactional outbox and inbox deduplication
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Outbox and inbox payloads follow the same minimization and access controls as do
 Oldest unpublished age, attempts, lag, and replay are observable and runbook-driven.
 ## Migration / rollback
 Schema changes are expand-and-contract; relays and consumers tolerate mixed compatible versions.
-

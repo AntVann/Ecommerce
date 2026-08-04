@@ -40,4 +40,3 @@ seed:
 	@echo "No business fixtures exist in Milestone 0. This target becomes active with business services."
 
 demo: smoke
-

@@ -1,6 +1,6 @@
 # ADR-018: Money representation and rounding policy
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Server-side calculations remain authoritative and reject invalid scale, sign, or
 Databases use numeric columns and metrics avoid high-cardinality monetary labels.
 ## Migration / rollback
 Policy changes are versioned and never recalculate immutable order snapshots silently.
-

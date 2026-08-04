@@ -1,6 +1,6 @@
 # ADR-002: Evolutionary service extraction and bounded contexts
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Security boundaries are explicit even when deployment cadence is initially share
 Every extracted service must justify its runtime and data-store cost.
 ## Migration / rollback
 Extraction requires contract tests and controlled data migration; reversal preserves the bounded-context API.
-

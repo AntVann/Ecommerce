@@ -1,6 +1,6 @@
 # ADR-001: Java 21 and Spring Boot 3
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Patch releases must be applied promptly and dependency scans gate releases.
 Images and CI runners must provide Java 21.
 ## Migration / rollback
 Patch upgrades are reversible through the parent version; major upgrades require a new ADR.
-

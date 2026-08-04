@@ -1,6 +1,6 @@
 # ADR-014: Kubernetes and Helm deployment model
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Use workload identity and external secret references; never embed secrets in cha
 The same immutable image digest is promoted with readiness and smoke gates.
 ## Migration / rollback
 Application rollbacks use Helm history when schemas remain compatible; otherwise use forward recovery.
-

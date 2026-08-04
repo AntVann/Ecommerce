@@ -36,4 +36,3 @@ if ($null -eq (Get-Command docker -ErrorAction SilentlyContinue)) {
 if ($LASTEXITCODE -ne 0) {
     throw 'Containerized contract validation failed.'
 }
-

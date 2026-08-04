@@ -12,4 +12,3 @@ components:
   schemas:
     EventEnvelope:
       $ref: "../events/event-envelope.v1.schema.json"
-

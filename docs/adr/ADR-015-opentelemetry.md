@@ -1,6 +1,6 @@
 # ADR-015: OpenTelemetry observability standard
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Tokens, credentials, payment data, full addresses, and unbounded payloads are pr
 Collectors decouple exporters; dashboards and alerts cover technical and business outcomes.
 ## Migration / rollback
 Exporters can change behind the collector while application instrumentation remains stable.
-

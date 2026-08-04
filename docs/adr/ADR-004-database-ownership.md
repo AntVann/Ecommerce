@@ -1,6 +1,6 @@
 # ADR-004: Database ownership per service
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Database roles cannot access another service's data.
 Health, capacity, migrations, and recovery are tracked per owner.
 ## Migration / rollback
 Boundary changes require an ADR, export/import contract, reconciliation, and rollback plan.
-

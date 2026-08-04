@@ -50,4 +50,3 @@ logging:
   level:
     root: INFO
     com.marketflow: INFO
-

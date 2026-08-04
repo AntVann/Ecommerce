@@ -24,4 +24,3 @@ fi
 chmod +x mvnw scripts/*.sh
 ./mvnw --version
 echo "MarketFlow foundation prerequisites are ready."
-

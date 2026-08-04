@@ -1,6 +1,6 @@
 # ADR-017: UUID identifiers and UTC time
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Opaque IDs do not replace ownership authorization and must not expose sensitive 
 Hosts synchronize clocks and traces retain event, correlation, and causation identifiers.
 ## Migration / rollback
 UUID variants remain contract-compatible; timestamp changes use additive migration.
-

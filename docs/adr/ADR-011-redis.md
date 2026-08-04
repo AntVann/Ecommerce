@@ -1,6 +1,6 @@
 # ADR-011: Redis for carts and distributed rate limits
-Status: Accepted  
-Date: 2026-08-03  
+Status: Accepted
+Date: 2026-08-03
 Owners: MarketFlow Architecture
 
 ## Context
@@ -17,4 +17,3 @@ Private TLS connections, authentication, key scoping, and fail-closed security l
 Latency, memory, eviction, hit rate, and availability are monitored.
 ## Migration / rollback
 Namespaces and serializers are versioned; carts can expire or be migrated without affecting orders.
-

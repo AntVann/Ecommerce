@@ -17,4 +17,3 @@ begins.
 
 The Milestone 0 sample service is intentionally not a bounded context. It proves platform
 conventions and must not accumulate business behavior.
-

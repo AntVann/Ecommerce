@@ -21,4 +21,3 @@ storage, and observability connections remain private and authenticated in deplo
 
 Feature-specific threat modeling and authorization tests are required as business capabilities are
 introduced. The sample service and local credentials are not production deployables.
-

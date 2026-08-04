@@ -17,4 +17,3 @@
 - [ ] Change remains within the owned bounded context
 
 ## Known limitations
-
