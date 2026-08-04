@@ -10,3 +10,8 @@ the producing bounded context and receives its own versioned schema before imple
 - Producers write events through a transactional outbox.
 - Consumers store `(consumerName, eventId)` with the business mutation in one local transaction.
 - Payloads minimize or redact personal and sensitive information.
+
+Milestone 1 publishes Identity events to `marketflow.identity.events.v1` and Seller events to
+`marketflow.seller.events.v1`. Registration carries only user and verification request IDs; a
+verification token is claimed exactly once through the authenticated internal Identity interface.
+Seller decision events use bounded reason codes rather than unrestricted review text.

@@ -4,15 +4,20 @@ MarketFlow is a multi-vendor e-commerce platform implemented as independently ow
 contexts. The authoritative product and engineering specification is
 [`docs/engineering-plan.md`](docs/engineering-plan.md).
 
-## Milestone 0 scope
+## Milestone 1 scope
 
-The current branch establishes only the foundation: Maven conventions, a non-business sample
-service, contract standards, local infrastructure, observability, CI, and architecture records.
-Identity, seller, catalog, inventory, checkout, payment, and other business capabilities belong to
-later milestones.
+The current milestone adds Identity and Seller Onboarding to the Milestone 0 foundation. It
+provides registration, verification state, secure authentication and session rotation, global
+roles, seller applications and review, seller memberships, ownership enforcement, security audit
+events, and service observability.
 
-Implementation evidence is recorded in
-[`docs/milestones/m0-completion.md`](docs/milestones/m0-completion.md).
+This remains an API-first backend. It does not contain a storefront, seller portal, or admin UI.
+Catalog, inventory, cart, checkout, payment, notification delivery, search, and fulfillment remain
+future milestones.
+
+Foundation evidence is recorded in [`docs/milestones/m0-completion.md`](docs/milestones/m0-completion.md).
+Milestone 1 evidence is recorded in
+[`docs/milestones/milestone-01-completion.md`](docs/milestones/milestone-01-completion.md).
 
 ## Prerequisites
 
@@ -48,6 +53,8 @@ The Compose environment exposes these local-only endpoints:
 | Component | URL |
 |---|---|
 | Sample service | http://localhost:8080/actuator/health/readiness |
+| Identity service | http://localhost:8081/actuator/health/readiness |
+| Seller service | http://localhost:8082/actuator/health/readiness |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 | RabbitMQ management | http://localhost:15672 |

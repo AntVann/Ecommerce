@@ -17,3 +17,17 @@ begins.
 
 The Milestone 0 sample service is intentionally not a bounded context. It proves platform
 conventions and must not accumulate business behavior.
+
+## Milestone 1 bounded contexts
+
+- Identity owns accounts, credentials, verification challenges, global roles, access-token keys,
+  refresh-token families, revocations, login rate limits, security events, and its outbox.
+- Seller owns applications, seller status, review history, memberships, seller roles and
+  permissions, security events, and its outbox.
+- The two services use separate databases. User and seller UUIDs crossing a boundary are opaque;
+  there are no cross-service foreign keys.
+- Seller verifies JWT signatures using Identity JWKS and performs a live Identity token-state check
+  before sensitive operations. Seller ownership remains a local service-layer and repository
+  decision, as recorded by ADR-021.
+- Registration and seller-decision events are durable integration boundaries. Their notification,
+  catalog, search, and order consumers are deliberately not part of Milestone 1.

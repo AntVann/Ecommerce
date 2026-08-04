@@ -27,3 +27,17 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     labels: [dependencies, container]
+
+  - package-ecosystem: docker
+    directory: /services/identity-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, container]
+
+  - package-ecosystem: docker
+    directory: /services/seller-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, container]

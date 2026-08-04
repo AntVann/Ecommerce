@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: marketflow-seller-service
+  datasource:
+    url: ${SELLER_DATABASE_URL:jdbc:postgresql://localhost:5432/marketflow_seller}
+    username: ${SELLER_DATABASE_USER:seller_app}
+    password: ${SELLER_DATABASE_PASSWORD:local-development-only}
+    hikari:
+      maximum-pool-size: 10
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+  forward-headers-strategy: framework
+
+marketflow:
+  seller:
+    identity-base-url: ${IDENTITY_BASE_URL:http://localhost:8081}
+    identity-issuer: ${IDENTITY_TOKEN_ISSUER:http://identity-service:8081}
+    identity-audience: ${IDENTITY_TOKEN_AUDIENCE:marketflow-api}
+    internal-service-key: ${IDENTITY_INTERNAL_SERVICE_KEY:local-development-only-change-me}
+
+management:
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: livenessState,ping
+        readiness:
+          include: readinessState,db,identityDependency
+      probes:
+        enabled: true
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${MARKETFLOW_ENVIRONMENT:local}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+
+logging:
+  structured:
+    format:
+      console: ecs
+  level:
+    root: INFO
+    com.marketflow: INFO

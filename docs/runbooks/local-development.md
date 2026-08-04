@@ -19,16 +19,18 @@
 ## Telemetry checks
 
 - Sample readiness: `http://localhost:8080/actuator/health/readiness`
-- Metrics: `http://localhost:8080/actuator/prometheus`
+- Identity readiness: `http://localhost:8081/actuator/health/readiness`
+- Seller readiness: `http://localhost:8082/actuator/health/readiness`
+- Service metrics: `/actuator/prometheus` on ports 8080, 8081, and 8082
 - Prometheus targets: `http://localhost:9090/targets`
 - Grafana health: `http://localhost:3000/api/health`
 - Tempo readiness: `http://localhost:3200/ready`
 
 The smoke command also proves correlation-header propagation, ECS JSON request logs, Prometheus
-scraping, and sample-service trace ingestion in Tempo.
+scraping, Milestone 1 Kafka topics, isolated service databases, and trace ingestion in Tempo.
 
 ## Stop and recovery
 
 `docker compose down` stops containers without deleting local volumes. Do not use `down -v` when
-the environment contains data that must be retained. For a disposable M0 environment, volume
+the environment contains data that must be retained. For a disposable local environment, volume
 removal still requires explicit confirmation of the project target.
