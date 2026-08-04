@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@asyncapi/parser": "3.6.1",
-    "@redocly/cli": "2.40.0",
+    "@redocly/cli": "2.43.2",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1"
   }
