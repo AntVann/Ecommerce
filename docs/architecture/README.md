@@ -31,3 +31,16 @@ conventions and must not accumulate business behavior.
   decision, as recorded by ADR-021.
 - Registration and seller-decision events are durable integration boundaries. Their notification,
   catalog, search, and order consumers are deliberately not part of Milestone 1.
+
+## Milestone 2 bounded contexts
+
+- Catalog owns categories, products, variants, seller-scoped SKUs, prices, publication state,
+  image metadata, seller-state projections, and its transactional outbox.
+- Inventory owns on-hand and reserved quantities, immutable movements, reservations, expiry,
+  idempotency records, and its transactional outbox.
+- Search owns only OpenSearch documents and projection/rebuild checkpoints. It is never used as
+  the authoritative source for product detail or inventory.
+- Catalog and Inventory call Seller's protected authorization API; neither can access Seller's
+  database. Seller suspension is also propagated through version-aware, idempotent projections.
+- Product publication initializes Inventory items through Catalog events. Search projects Catalog
+  and Seller events and can rebuild from a protected, paginated Catalog export.

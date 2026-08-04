@@ -4,20 +4,22 @@ MarketFlow is a multi-vendor e-commerce platform implemented as independently ow
 contexts. The authoritative product and engineering specification is
 [`docs/engineering-plan.md`](docs/engineering-plan.md).
 
-## Milestone 1 scope
+## Milestone 2 scope
 
-The current milestone adds Identity and Seller Onboarding to the Milestone 0 foundation. It
-provides registration, verification state, secure authentication and session rotation, global
-roles, seller applications and review, seller memberships, ownership enforcement, security audit
-events, and service observability.
+The current milestone adds Catalog, Inventory, and Search to the Identity and Seller foundation.
+It provides seller-owned products and variants, controlled categories, decimal prices, publication
+validation, media metadata, concurrency-safe stock, reservation foundations, transactional domain
+events, and a rebuildable OpenSearch product projection.
 
 This remains an API-first backend. It does not contain a storefront, seller portal, or admin UI.
-Catalog, inventory, cart, checkout, payment, notification delivery, search, and fulfillment remain
-future milestones.
+Carts, checkout, payments, order completion, notification delivery, and fulfillment remain future
+milestones.
 
 Foundation evidence is recorded in [`docs/milestones/m0-completion.md`](docs/milestones/m0-completion.md).
 Milestone 1 evidence is recorded in
 [`docs/milestones/milestone-01-completion.md`](docs/milestones/milestone-01-completion.md).
+Milestone 2 evidence is recorded in
+[`docs/milestones/milestone-02-completion.md`](docs/milestones/milestone-02-completion.md).
 
 ## Prerequisites
 
@@ -55,6 +57,9 @@ The Compose environment exposes these local-only endpoints:
 | Sample service | http://localhost:8080/actuator/health/readiness |
 | Identity service | http://localhost:8081/actuator/health/readiness |
 | Seller service | http://localhost:8082/actuator/health/readiness |
+| Catalog service | http://localhost:8083/actuator/health/readiness |
+| Inventory service | http://localhost:8084/actuator/health/readiness |
+| Search service | http://localhost:8085/actuator/health/readiness |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 | RabbitMQ management | http://localhost:15672 |

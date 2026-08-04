@@ -1,5 +1,5 @@
 # ADR-001: Java 21 and Spring Boot 3
-Status: Accepted
+Status: Superseded by ADR-022
 Date: 2026-08-03
 Owners: MarketFlow Architecture
 
