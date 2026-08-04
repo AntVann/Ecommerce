@@ -48,8 +48,7 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(
-            HttpSecurity http, com.fasterxml.jackson.databind.ObjectMapper objectMapper)
-            throws Exception {
+            HttpSecurity http, tools.jackson.databind.ObjectMapper objectMapper) throws Exception {
         JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
         authorities.setAuthoritiesClaimName("roles");
         authorities.setAuthorityPrefix("ROLE_");
@@ -96,10 +95,13 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    RestClient identityRestClient(RestClient.Builder builder, SellerSecurityProperties properties) {
+    RestClient identityRestClient(SellerSecurityProperties properties) {
         HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(client);
         requestFactory.setReadTimeout(Duration.ofSeconds(2));
-        return builder.requestFactory(requestFactory).baseUrl(properties.identityBaseUrl()).build();
+        return RestClient.builder()
+                .requestFactory(requestFactory)
+                .baseUrl(properties.identityBaseUrl())
+                .build();
     }
 }

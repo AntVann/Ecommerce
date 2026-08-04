@@ -79,8 +79,7 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(
-            HttpSecurity http, com.fasterxml.jackson.databind.ObjectMapper objectMapper)
-            throws Exception {
+            HttpSecurity http, tools.jackson.databind.ObjectMapper objectMapper) throws Exception {
         JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
         authorities.setAuthoritiesClaimName("roles");
         authorities.setAuthorityPrefix("ROLE_");
