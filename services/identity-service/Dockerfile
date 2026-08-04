@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:25-jdk-alpine AS build
 WORKDIR /workspace
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
@@ -11,7 +11,7 @@ RUN chmod +x mvnw && ./mvnw -B -pl services/identity-service -am dependency:go-o
 COPY services/identity-service/src services/identity-service/src
 RUN ./mvnw -B -pl services/identity-service -am package -DskipTests
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 RUN addgroup -S marketflow && adduser -S -G marketflow -u 10001 marketflow
 WORKDIR /app
 COPY --from=build /workspace/services/identity-service/target/identity-service-*.jar app.jar
