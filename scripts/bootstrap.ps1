@@ -40,4 +40,4 @@ if ($mavenExitCode -ne 0) {
     throw 'The Maven wrapper failed.'
 }
 
-Write-Host 'MarketFlow foundation prerequisites are ready.'
+Write-Host 'MarketFlow prerequisites are ready.'

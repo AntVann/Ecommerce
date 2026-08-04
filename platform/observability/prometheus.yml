@@ -11,3 +11,13 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["sample-service:8080"]
+
+  - job_name: identity-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["identity-service:8081"]
+
+  - job_name: seller-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["seller-service:8082"]

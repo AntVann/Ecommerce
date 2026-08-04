@@ -18,6 +18,40 @@ services:
       retries: 20
     restart: unless-stopped
 
+  identity-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: marketflow_identity
+      POSTGRES_USER: ${IDENTITY_DATABASE_USER:-identity_app}
+      POSTGRES_PASSWORD: ${IDENTITY_DATABASE_PASSWORD:-local-development-only}
+    ports:
+      - "5433:5432"
+    volumes:
+      - identity-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  seller-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: marketflow_seller
+      POSTGRES_USER: ${SELLER_DATABASE_USER:-seller_app}
+      POSTGRES_PASSWORD: ${SELLER_DATABASE_PASSWORD:-local-development-only}
+    ports:
+      - "5434:5432"
+    volumes:
+      - seller-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
   kafka:
     image: apache/kafka:4.3.1
     environment:
@@ -45,6 +79,19 @@ services:
       retries: 20
       start_period: 20s
     restart: unless-stopped
+
+  kafka-init:
+    image: apache/kafka:4.3.1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - /bin/bash
+      - -ec
+      - |
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic marketflow.identity.events.v1 --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic marketflow.seller.events.v1 --partitions 3 --replication-factor 1
+    restart: "no"
 
   rabbitmq:
     image: rabbitmq:4.2.7-management
@@ -163,6 +210,80 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  identity-service:
+    build:
+      context: .
+      dockerfile: services/identity-service/Dockerfile
+    environment:
+      MARKETFLOW_ENVIRONMENT: local
+      SERVER_PORT: 8081
+      IDENTITY_DATABASE_URL: jdbc:postgresql://identity-postgres:5432/marketflow_identity
+      IDENTITY_DATABASE_USER: ${IDENTITY_DATABASE_USER:-identity_app}
+      IDENTITY_DATABASE_PASSWORD: ${IDENTITY_DATABASE_PASSWORD:-local-development-only}
+      IDENTITY_TOKEN_ISSUER: http://identity-service:8081
+      IDENTITY_TOKEN_AUDIENCE: marketflow-api
+      IDENTITY_INTERNAL_SERVICE_KEY: ${IDENTITY_INTERNAL_SERVICE_KEY:-local-development-only-change-me}
+      IDENTITY_RATE_LIMIT_KEY: ${IDENTITY_RATE_LIMIT_KEY:-local-development-only-rate-key}
+      IDENTITY_SECURE_COOKIES: "false"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+    ports:
+      - "8081:8081"
+    depends_on:
+      identity-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health/readiness | grep -q '\"status\":\"UP\"'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  seller-service:
+    build:
+      context: .
+      dockerfile: services/seller-service/Dockerfile
+    environment:
+      MARKETFLOW_ENVIRONMENT: local
+      SERVER_PORT: 8082
+      SELLER_DATABASE_URL: jdbc:postgresql://seller-postgres:5432/marketflow_seller
+      SELLER_DATABASE_USER: ${SELLER_DATABASE_USER:-seller_app}
+      SELLER_DATABASE_PASSWORD: ${SELLER_DATABASE_PASSWORD:-local-development-only}
+      IDENTITY_BASE_URL: http://identity-service:8081
+      IDENTITY_TOKEN_ISSUER: http://identity-service:8081
+      IDENTITY_TOKEN_AUDIENCE: marketflow-api
+      IDENTITY_INTERNAL_SERVICE_KEY: ${IDENTITY_INTERNAL_SERVICE_KEY:-local-development-only-change-me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+    ports:
+      - "8082:8082"
+    depends_on:
+      seller-postgres:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health/readiness | grep -q '\"status\":\"UP\"'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v3.13.1
     command:
@@ -176,6 +297,10 @@ services:
       - "9090:9090"
     depends_on:
       sample-service:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+      seller-service:
         condition: service_healthy
     restart: unless-stopped
 
@@ -207,6 +332,8 @@ services:
 
 volumes:
   postgres-data:
+  identity-postgres-data:
+  seller-postgres-data:
   kafka-data:
   rabbitmq-data:
   redis-data:
