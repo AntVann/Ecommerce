@@ -100,6 +100,14 @@ public final class InventoryController {
         }
     }
 
+    @PostMapping("/internal/v1/inventory/availability")
+    List<InventoryRepository.Item> availability(
+            @RequestHeader(name = "X-Internal-Service-Key", required = false) String key,
+            @Valid @RequestBody AvailabilityRequest request) {
+        requireKey(key);
+        return inventory.availability(request.variantIds());
+    }
+
     @PostMapping("/internal/v1/inventory/reservations/{referenceId}/release")
     InventoryRepository.Reservation release(
             @RequestHeader(name = "X-Internal-Service-Key", required = false) String key,
@@ -147,4 +155,6 @@ public final class InventoryController {
             @NotNull UUID referenceId,
             @NotEmpty @Size(max = 100) List<@Valid ReservationLineRequest> lines,
             @Min(60) @Max(3600) long ttlSeconds) {}
+
+    public record AvailabilityRequest(@NotEmpty @Size(max = 100) List<@NotNull UUID> variantIds) {}
 }

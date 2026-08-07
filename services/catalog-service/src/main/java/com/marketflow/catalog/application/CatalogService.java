@@ -8,6 +8,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -270,6 +272,32 @@ public class CatalogService {
         return repository.export(offset, Math.min(limit, 500)).stream().map(this::view).toList();
     }
 
+    public List<CheckoutValidation> validateCheckout(List<UUID> variantIds) {
+        var unique = variantIds.stream().distinct().toList();
+        var found =
+                repository.checkoutVariants(unique).stream()
+                        .collect(
+                                Collectors.toMap(
+                                        CatalogRepository.CheckoutVariant::variantId,
+                                        Function.identity()));
+        return unique.stream()
+                .map(
+                        id -> {
+                            var value = found.get(id);
+                            if (value == null) return CheckoutValidation.notFound(id);
+                            String status =
+                                    !"ACTIVE".equals(value.productStatus())
+                                            ? "PRODUCT_INACTIVE"
+                                            : !value.variantActive()
+                                                    ? "VARIANT_INACTIVE"
+                                                    : !"APPROVED".equals(value.sellerStatus())
+                                                            ? "SELLER_INACTIVE"
+                                                            : "VALID";
+                            return CheckoutValidation.from(value, status);
+                        })
+                .toList();
+    }
+
     private CatalogView view(CatalogRepository.Product product) {
         return new CatalogView(
                 product,
@@ -328,4 +356,37 @@ public class CatalogService {
             List<CatalogRepository.Variant> variants,
             List<CatalogRepository.Image> images,
             Map<String, Object> attributes) {}
+
+    public record CheckoutValidation(
+            UUID variantId,
+            UUID productId,
+            UUID sellerId,
+            String productName,
+            String variantName,
+            String sku,
+            String priceAmount,
+            String priceCurrency,
+            String status,
+            Long productVersion,
+            Long variantVersion) {
+        static CheckoutValidation notFound(UUID id) {
+            return new CheckoutValidation(
+                    id, null, null, null, null, null, null, null, "NOT_FOUND", null, null);
+        }
+
+        static CheckoutValidation from(CatalogRepository.CheckoutVariant value, String status) {
+            return new CheckoutValidation(
+                    value.variantId(),
+                    value.productId(),
+                    value.sellerId(),
+                    value.productName(),
+                    value.variantName(),
+                    value.sku(),
+                    value.priceAmount().toPlainString(),
+                    value.priceCurrency(),
+                    status,
+                    value.productVersion(),
+                    value.variantVersion());
+        }
+    }
 }

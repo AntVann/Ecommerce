@@ -55,6 +55,10 @@ public class InventoryService {
         return repository.movements(sellerId, variantId, Math.min(limit, 100));
     }
 
+    public List<InventoryRepository.Item> availability(List<UUID> variantIds) {
+        return repository.items(variantIds.stream().distinct().toList());
+    }
+
     @Transactional
     public InventoryRepository.Item adjust(
             UUID userId,
@@ -104,6 +108,22 @@ public class InventoryService {
     @Transactional
     public InventoryRepository.Reservation reserve(
             UUID referenceId, List<ReserveLine> lines, Duration ttl, String correlationId) {
+        return reserveInternal(referenceId, lines, ttl, correlationId);
+    }
+
+    @Transactional
+    public void reserveOrderEvent(
+            UUID eventId,
+            UUID orderId,
+            List<ReserveLine> lines,
+            Duration ttl,
+            String correlationId) {
+        if (repository.processed("inventory-order-v1", eventId)) return;
+        reserveInternal(orderId, lines, ttl, correlationId);
+    }
+
+    private InventoryRepository.Reservation reserveInternal(
+            UUID referenceId, List<ReserveLine> lines, Duration ttl, String correlationId) {
         var existing = repository.reservation(referenceId);
         if (existing.isPresent()) return existing.get();
         Instant now = Instant.now(clock);
@@ -134,7 +154,15 @@ public class InventoryService {
                     "inventory.inventory-reserved.v1",
                     changed,
                     correlationId,
-                    Map.of("referenceId", referenceId, "quantity", line.quantity()));
+                    Map.of(
+                            "referenceId",
+                            referenceId,
+                            "orderId",
+                            referenceId,
+                            "reservationId",
+                            reservation.id(),
+                            "quantity",
+                            line.quantity()));
         }
         return reservation;
     }
@@ -143,7 +171,8 @@ public class InventoryService {
     public InventoryRepository.Reservation release(UUID referenceId, String correlationId) {
         var reservation =
                 repository.reservation(referenceId).orElseThrow(InventoryService::notFound);
-        if (!"ACTIVE".equals(reservation.status())) return reservation;
+        if (!("ACTIVE".equals(reservation.status()) || "PENDING".equals(reservation.status())))
+            return reservation;
         Instant now = Instant.now(clock);
         for (var line : repository.reservationLines(reservation.id())) {
             var item = repository.item(line.variantId()).orElseThrow();
@@ -165,7 +194,7 @@ public class InventoryService {
                     correlationId,
                     Map.of("referenceId", referenceId, "quantity", line.quantity()));
         }
-        repository.completeReservation(reservation.id(), "ACTIVE", "RELEASED", now);
+        repository.completePendingReservation(reservation.id(), "RELEASED", now);
         return repository.reservation(referenceId).orElseThrow();
     }
 
@@ -181,10 +210,23 @@ public class InventoryService {
                 Instant.now(clock));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordOrderReservationFailure(
+            UUID eventId, UUID referenceId, String reasonCode, String correlationId) {
+        if (repository.processed("inventory-order-v1", eventId)) return;
+        repository.outbox(
+                "inventory.inventory-reservation-failed.v1",
+                referenceId,
+                1,
+                correlationId,
+                Map.of("referenceId", referenceId, "reasonCode", reasonCode),
+                Instant.now(clock));
+    }
+
     @Transactional
     public void expire(InventoryRepository.Reservation reservation) {
-        if (!repository.completeReservation(
-                reservation.id(), "ACTIVE", "EXPIRED", Instant.now(clock))) return;
+        if (!repository.completePendingReservation(reservation.id(), "EXPIRED", Instant.now(clock)))
+            return;
         Instant now = Instant.now(clock);
         for (var line : repository.reservationLines(reservation.id())) {
             var item = repository.item(line.variantId()).orElseThrow();

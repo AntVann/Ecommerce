@@ -48,6 +48,16 @@ public class InventoryRepository {
                 sellerId);
     }
 
+    public List<Item> items(List<UUID> variantIds) {
+        if (variantIds.isEmpty()) return List.of();
+        return new org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate(jdbc)
+                .query(
+                        "SELECT variant_id,seller_id,on_hand,reserved,version,updated_at FROM inventory_item WHERE variant_id IN (:variantIds)",
+                        new org.springframework.jdbc.core.namedparam.MapSqlParameterSource(
+                                "variantIds", variantIds),
+                        InventoryRepository::mapItem);
+    }
+
     public List<Movement> movements(UUID sellerId, UUID variantId, int limit) {
         return jdbc.query(
                 "SELECT id,variant_id,seller_id,movement_type,quantity_delta,reason_code,reference_id,actor_user_id,correlation_id,occurred_at FROM stock_movement WHERE seller_id=? AND variant_id=? ORDER BY occurred_at DESC LIMIT ?",
@@ -136,7 +146,7 @@ public class InventoryRepository {
 
     public List<Reservation> expiredReservations(Instant now, int limit) {
         return jdbc.query(
-                "SELECT id,reference_id,status,expires_at,created_at,updated_at FROM inventory_reservation WHERE status='ACTIVE' AND expires_at<=? ORDER BY expires_at LIMIT ?",
+                "SELECT id,reference_id,status,expires_at,created_at,updated_at FROM inventory_reservation WHERE status IN ('ACTIVE','PENDING') AND expires_at<=? ORDER BY expires_at LIMIT ?",
                 (rs, row) ->
                         new Reservation(
                                 rs.getObject("id", UUID.class),
@@ -155,7 +165,7 @@ public class InventoryRepository {
     public Reservation createReservation(UUID referenceId, Instant expiresAt, Instant now) {
         UUID id = UUID.randomUUID();
         jdbc.update(
-                "INSERT INTO inventory_reservation(id,reference_id,status,expires_at,created_at,updated_at) VALUES (?,?,'ACTIVE',?,?,?)",
+                "INSERT INTO inventory_reservation(id,reference_id,status,expires_at,created_at,updated_at) VALUES (?,?,'PENDING',?,?,?)",
                 id,
                 referenceId,
                 db(expiresAt),
@@ -190,6 +200,15 @@ public class InventoryRepository {
                         db(now),
                         id,
                         from)
+                == 1;
+    }
+
+    public boolean completePendingReservation(UUID id, String to, Instant now) {
+        return jdbc.update(
+                        "UPDATE inventory_reservation SET status=?,updated_at=? WHERE id=? AND status IN ('ACTIVE','PENDING')",
+                        to,
+                        db(now),
+                        id)
                 == 1;
     }
 
