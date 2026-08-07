@@ -1,0 +1,35 @@
+spring:
+  application.name: marketflow-cart-service
+  data.redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2s
+server:
+  port: ${SERVER_PORT:8086}
+  shutdown: graceful
+marketflow.cart:
+  identity-base-url: ${IDENTITY_BASE_URL:http://localhost:8081}
+  identity-issuer: ${IDENTITY_TOKEN_ISSUER:http://identity-service:8081}
+  identity-audience: ${IDENTITY_TOKEN_AUDIENCE:marketflow-api}
+  catalog-base-url: ${CATALOG_BASE_URL:http://localhost:8083}
+  internal-service-key: ${IDENTITY_INTERNAL_SERVICE_KEY:local-development-only-change-me}
+  namespace: ${CART_REDIS_NAMESPACE:marketflow:local:cart:v1}
+  guest-ttl: ${CART_GUEST_TTL:P7D}
+  customer-ttl: ${CART_CUSTOMER_TTL:P30D}
+  max-lines: ${CART_MAX_LINES:100}
+  secure-cookies: ${SECURE_COOKIES:false}
+management:
+  endpoint.health:
+    probes.enabled: true
+    group.liveness.include: livenessState,ping
+    group.readiness.include: readinessState,redis
+  endpoints.web.exposure.include: health,info,prometheus
+  metrics.tags:
+    application: ${spring.application.name}
+    environment: ${MARKETFLOW_ENVIRONMENT:local}
+  opentelemetry.tracing.export.otlp.endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  tracing.sampling.probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+logging:
+  structured.format.console: ecs
+  level.com.marketflow: INFO
