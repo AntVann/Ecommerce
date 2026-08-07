@@ -10,6 +10,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -87,6 +89,40 @@ public class CatalogRepository {
                         Integer.class,
                         sellerId)
                 == 1;
+    }
+
+    public List<CheckoutVariant> checkoutVariants(List<UUID> variantIds) {
+        if (variantIds.isEmpty()) return List.of();
+        return new NamedParameterJdbcTemplate(jdbc)
+                .query(
+                        """
+                        SELECT v.id AS variant_id, v.product_id, v.seller_id, v.sku,
+                               v.name AS variant_name, v.price_amount, v.price_currency,
+                               v.active AS variant_active, v.version AS variant_version,
+                               p.title AS product_name, p.status AS product_status,
+                               p.version AS product_version,
+                               COALESCE(sp.status, 'NOT_FOUND') AS seller_status
+                        FROM product_variant v
+                        JOIN product p ON p.id = v.product_id
+                        LEFT JOIN seller_projection sp ON sp.seller_id = v.seller_id
+                        WHERE v.id IN (:variantIds)
+                        """,
+                        new MapSqlParameterSource("variantIds", variantIds),
+                        (rs, row) ->
+                                new CheckoutVariant(
+                                        rs.getObject("variant_id", UUID.class),
+                                        rs.getObject("product_id", UUID.class),
+                                        rs.getObject("seller_id", UUID.class),
+                                        rs.getString("product_name"),
+                                        rs.getString("variant_name"),
+                                        rs.getString("sku"),
+                                        rs.getBigDecimal("price_amount"),
+                                        rs.getString("price_currency"),
+                                        rs.getBoolean("variant_active"),
+                                        rs.getString("product_status"),
+                                        rs.getString("seller_status"),
+                                        rs.getLong("product_version"),
+                                        rs.getLong("variant_version")));
     }
 
     public void applySellerStatus(UUID eventId, UUID sellerId, String status, long version) {
@@ -438,4 +474,19 @@ public class CatalogRepository {
             String altText,
             int displayOrder,
             String status) {}
+
+    public record CheckoutVariant(
+            UUID variantId,
+            UUID productId,
+            UUID sellerId,
+            String productName,
+            String variantName,
+            String sku,
+            BigDecimal priceAmount,
+            String priceCurrency,
+            boolean variantActive,
+            String productStatus,
+            String sellerStatus,
+            long productVersion,
+            long variantVersion) {}
 }

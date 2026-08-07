@@ -44,3 +44,16 @@ conventions and must not accumulate business behavior.
   database. Seller suspension is also propagated through version-aware, idempotent projections.
 - Product publication initializes Inventory items through Catalog events. Search projects Catalog
   and Seller events and can rebuild from a protected, paginated Catalog export.
+
+## Milestone 3 bounded contexts
+
+- Cart owns versioned Redis documents for guest and authenticated carts, item quantity rules,
+  advisory price snapshots, actor-specific expiry, and deterministic guest-to-customer merging.
+- Order owns checkout idempotency records, immutable commercial and address snapshots, the initial
+  order state machine, Saga progress, its transactional outbox, and its Inventory-event inbox.
+- Checkout reads only protected service contracts: Cart supplies the selected snapshot, Catalog
+  supplies current sellable variants and prices, Seller supplies current approval state, and
+  Inventory supplies availability. No service reads another context's store.
+- Inventory remains the reservation authority. It handles order-created commands idempotently and
+  emits the existing reservation success/failure contracts. Payment, confirmation, fulfillment,
+  and notification are outside the Milestone 3 state machine.

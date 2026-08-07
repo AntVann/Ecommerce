@@ -37,7 +37,32 @@ function Get-ResponseContent {
     return [string]$Response.Content
 }
 
-$smokeCorrelationId = 'm2-infrastructure-smoke'
+function Wait-PrometheusTarget {
+    param(
+        [Parameter(Mandatory)][string]$Job,
+        [int]$Attempts = 30
+    )
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        try {
+            $response = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:9090/api/v1/targets' -TimeoutSec 5
+            $payload = Get-ResponseContent -Response $response | ConvertFrom-Json
+            $target = $payload.data.activeTargets |
+                Where-Object { $_.labels.job -eq $Job -and $_.health -eq 'up' } |
+                Select-Object -First 1
+            if ($null -ne $target) {
+                Write-Host "PASS Prometheus target $Job"
+                return
+            }
+        } catch {
+            if ($attempt -eq $Attempts) { throw }
+        }
+        Start-Sleep -Seconds 2
+    }
+    throw "Prometheus did not report a healthy $Job target."
+}
+
+$smokeCorrelationId = 'm3-infrastructure-smoke'
 $readiness = Wait-Http -Name 'sample readiness' `
     -Uri 'http://localhost:8080/actuator/health/readiness' `
     -Headers @{ 'X-Correlation-ID' = $smokeCorrelationId }
@@ -63,7 +88,9 @@ if ((Get-ResponseContent -Response $sellerReadiness) -notmatch '"status"\s*:\s*"
 foreach ($service in @(
     @{ Name = 'catalog'; Port = 8083 },
     @{ Name = 'inventory'; Port = 8084 },
-    @{ Name = 'search'; Port = 8085 }
+    @{ Name = 'search'; Port = 8085 },
+    @{ Name = 'cart'; Port = 8086 },
+    @{ Name = 'order'; Port = 8087 }
 )) {
     $response = Wait-Http -Name "$($service.Name) readiness" `
         -Uri "http://localhost:$($service.Port)/actuator/health/readiness" `
@@ -86,17 +113,9 @@ if ((Get-ResponseContent -Response $sellerMetrics) -notmatch 'authorization_deni
     throw 'Expected Seller authorization metrics were not published.'
 }
 
-$targets = Wait-Http -Name 'Prometheus API' -Uri 'http://localhost:9090/api/v1/targets'
-$targetsJson = Get-ResponseContent -Response $targets | ConvertFrom-Json
-$sampleTarget = $targetsJson.data.activeTargets | Where-Object { $_.labels.job -eq 'sample-service' }
-if ($null -eq $sampleTarget -or $sampleTarget.health -ne 'up') {
-    throw 'Prometheus is not scraping the sample service successfully.'
-}
-foreach ($job in @('identity-service', 'seller-service', 'catalog-service', 'inventory-service', 'search-service')) {
-    $target = $targetsJson.data.activeTargets | Where-Object { $_.labels.job -eq $job }
-    if ($null -eq $target -or $target.health -ne 'up') {
-        throw "Prometheus is not scraping $job successfully."
-    }
+Wait-Http -Name 'Prometheus API' -Uri 'http://localhost:9090/api/v1/targets' | Out-Null
+foreach ($job in @('sample-service', 'identity-service', 'seller-service', 'catalog-service', 'inventory-service', 'search-service', 'cart-service', 'order-service')) {
+    Wait-PrometheusTarget -Job $job
 }
 
 Wait-Http -Name 'Grafana' -Uri 'http://localhost:3000/api/health' | Out-Null
@@ -116,9 +135,11 @@ if ($LASTEXITCODE -ne 0) { throw 'Catalog PostgreSQL readiness check failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Inventory PostgreSQL readiness check failed.' }
 & docker compose exec -T search-postgres pg_isready -U search_app -d marketflow_search
 if ($LASTEXITCODE -ne 0) { throw 'Search PostgreSQL readiness check failed.' }
+& docker compose exec -T order-postgres pg_isready -U order_app -d marketflow_order
+if ($LASTEXITCODE -ne 0) { throw 'Order PostgreSQL readiness check failed.' }
 $kafkaTopics = (& docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list) -join [Environment]::NewLine
-if ($LASTEXITCODE -ne 0 -or $kafkaTopics -notmatch 'marketflow.identity.events.v1' -or $kafkaTopics -notmatch 'marketflow.seller.events.v1' -or $kafkaTopics -notmatch 'marketflow.catalog.events.v1' -or $kafkaTopics -notmatch 'marketflow.inventory.events.v1') {
-    throw 'Milestone 2 Kafka topics were not provisioned.'
+if ($LASTEXITCODE -ne 0 -or $kafkaTopics -notmatch 'marketflow.identity.events.v1' -or $kafkaTopics -notmatch 'marketflow.seller.events.v1' -or $kafkaTopics -notmatch 'marketflow.catalog.events.v1' -or $kafkaTopics -notmatch 'marketflow.inventory.events.v1' -or $kafkaTopics -notmatch 'marketflow.order.events.v1') {
+    throw 'Milestone 3 Kafka topics were not provisioned.'
 }
 & docker compose exec -T rabbitmq rabbitmq-diagnostics -q ping
 if ($LASTEXITCODE -ne 0) { throw 'RabbitMQ readiness check failed.' }
@@ -132,10 +153,10 @@ if ($null -eq $traceJson.traces -or $traceJson.traces.Count -lt 1) {
     throw 'No sample-service trace reached Tempo.'
 }
 
-$serviceLogs = (& docker compose logs --no-color --tail 300 sample-service identity-service seller-service catalog-service inventory-service search-service) -join [Environment]::NewLine
-if ($LASTEXITCODE -ne 0 -or $serviceLogs -notmatch '"correlationId":"m2-infrastructure-smoke"') {
+$serviceLogs = (& docker compose logs --no-color --tail 300 sample-service identity-service seller-service catalog-service inventory-service search-service cart-service order-service) -join [Environment]::NewLine
+if ($LASTEXITCODE -ne 0 -or $serviceLogs -notmatch '"correlationId":"m3-infrastructure-smoke"') {
     throw 'Structured service logs did not contain the smoke correlation ID.'
 }
 Write-Host 'PASS structured correlation log'
 
-Write-Host 'All MarketFlow Milestone 2 infrastructure smoke checks passed.'
+Write-Host 'All MarketFlow Milestone 3 infrastructure smoke checks passed.'

@@ -21,13 +21,19 @@
 - Sample readiness: `http://localhost:8080/actuator/health/readiness`
 - Identity readiness: `http://localhost:8081/actuator/health/readiness`
 - Seller readiness: `http://localhost:8082/actuator/health/readiness`
-- Service metrics: `/actuator/prometheus` on ports 8080, 8081, and 8082
+- Catalog readiness: `http://localhost:8083/actuator/health/readiness`
+- Inventory readiness: `http://localhost:8084/actuator/health/readiness`
+- Search readiness: `http://localhost:8085/actuator/health/readiness`
+- Cart readiness: `http://localhost:8086/actuator/health/readiness`
+- Order readiness: `http://localhost:8087/actuator/health/readiness`
+- Service metrics: `/actuator/prometheus` on ports 8080 through 8087
 - Prometheus targets: `http://localhost:9090/targets`
 - Grafana health: `http://localhost:3000/api/health`
 - Tempo readiness: `http://localhost:3200/ready`
 
 The smoke command also proves correlation-header propagation, ECS JSON request logs, Prometheus
-scraping, Milestone 1 Kafka topics, isolated service databases, and trace ingestion in Tempo.
+scraping, Milestone 3 Kafka topics, isolated service databases, and trace ingestion in Tempo. See
+`docs/runbooks/cart-checkout-local.md` for cart expiry, checkout idempotency, and Saga diagnosis.
 
 ## Stop and recovery
 

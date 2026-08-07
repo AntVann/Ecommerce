@@ -3,6 +3,13 @@ info: {title: MarketFlow Catalog API, version: 1.0.0, description: Seller catalo
 servers: [{url: "http://localhost:8083"}]
 security: [{bearerAuth: []}]
 paths:
+  /internal/v1/catalog/checkout-validations:
+    post:
+      summary: Batch-resolve authoritative checkout product, seller, variant, and price facts
+      operationId: validateCheckoutVariants
+      security: [{internalServiceKey: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/CheckoutValidationRequest"}}}}
+      responses: {"200": {description: One validation result per distinct requested variant, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/CheckoutValidation"}}}}}, "401": {$ref: "#/components/responses/Problem"}}
   /api/v1/categories:
     get:
       summary: List active product categories
@@ -74,7 +81,7 @@ paths:
       parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}, {$ref: "./common-components.yaml#/components/parameters/IfMatch"}]
       responses: {"200": {$ref: "#/components/responses/Product"}}
 components:
-  securitySchemes: {bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}}
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}, internalServiceKey: {type: apiKey, in: header, name: X-Internal-Service-Key}}
   parameters:
     SellerId: {name: sellerId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
     ProductId: {name: productId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
@@ -95,3 +102,20 @@ components:
     Money: {type: object, required: [amount, currency], properties: {amount: {type: string, pattern: "^[0-9]+(\\.[0-9]{1,4})?$"}, currency: {type: string, pattern: "^[A-Z]{3}$"}}, additionalProperties: false}
     VariantRequest: {type: object, required: [sku, name, price], properties: {sku: {type: string, pattern: "^[A-Za-z0-9._-]{1,80}$"}, name: {type: string, maxLength: 160}, attributes: {type: object, additionalProperties: {type: string}}, price: {$ref: "#/components/schemas/Money"}}, additionalProperties: false}
     ImageRequest: {type: object, required: [objectKey, contentType, byteSize, width, height, altText, displayOrder], properties: {objectKey: {type: string, maxLength: 500}, contentType: {type: string, enum: [image/jpeg, image/png, image/webp]}, byteSize: {type: integer, minimum: 1, maximum: 10485760}, width: {type: integer, minimum: 1}, height: {type: integer, minimum: 1}, altText: {type: string, minLength: 1, maxLength: 300}, displayOrder: {type: integer, minimum: 0}}, additionalProperties: false}
+    CheckoutValidationRequest: {type: object, required: [variantIds], properties: {variantIds: {type: array, minItems: 1, maxItems: 100, items: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}}, additionalProperties: false}
+    CheckoutValidation:
+      type: object
+      required: [variantId, status]
+      properties:
+        variantId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        productId: {anyOf: [{$ref: "./common-components.yaml#/components/schemas/Identifier"}, {type: "null"}]}
+        sellerId: {anyOf: [{$ref: "./common-components.yaml#/components/schemas/Identifier"}, {type: "null"}]}
+        productName: {type: [string, "null"]}
+        variantName: {type: [string, "null"]}
+        sku: {type: [string, "null"]}
+        priceAmount: {type: [string, "null"], pattern: "^[0-9]+(\\.[0-9]{1,4})?$"}
+        priceCurrency: {type: [string, "null"], pattern: "^[A-Z]{3}$"}
+        status: {type: string, enum: [VALID, PRODUCT_INACTIVE, VARIANT_INACTIVE, SELLER_INACTIVE, NOT_FOUND]}
+        productVersion: {type: [integer, "null"], minimum: 1}
+        variantVersion: {type: [integer, "null"], minimum: 1}
+      additionalProperties: false
