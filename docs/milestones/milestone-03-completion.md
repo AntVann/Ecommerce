@@ -131,6 +131,9 @@ Validation results:
 
 ## Known Limitations
 
+- GitHub's Dependency Review check fails before analysis because the repository Dependency Graph
+  is disabled. Enable the graph in repository settings to activate that external review gate; the
+  Java, contract, security, and Compose validations are separate checks.
 - The milestone is API-only and has no storefront UI.
 - Cart estimates can become stale by design; only the Order snapshot is commercially authoritative.
 - The Saga intentionally stops after Inventory reservation. It neither authorizes payment nor
