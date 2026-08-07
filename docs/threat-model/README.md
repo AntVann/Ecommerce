@@ -55,3 +55,18 @@ service workload identity, and network policy are deferred to the cloud deployme
 | Product image path injection | Seller/product-scoped object keys, content-type allow-list, size and dimension constraints; bytes remain in object storage |
 | Search becomes an authority | Direct detail remains Catalog-owned and Search can be deleted/rebuilt through an alias switch |
 | Internal API spoofing | Constant-time service-key comparison in local runtime; workload identity remains the production target |
+
+## Cart, Checkout, and Order threats
+
+| Threat | Milestone 3 control |
+|---|---|
+| Guest cart takeover | High-entropy opaque guest credential, digest-only Redis keying, secure cookie attributes, and CSRF validation on mutations |
+| Customer reads or mutates another cart | Cart identity is derived from the validated access token; caller-supplied customer IDs are not trusted |
+| Stale or manipulated cart price | Cart price is advisory; checkout obtains current Catalog money values and snapshots the validated result |
+| Disabled seller or unavailable stock reaches an order | Checkout revalidates Seller state and Inventory availability through protected owner APIs |
+| Duplicate checkout creates multiple orders | Idempotency key plus canonical request fingerprint and database uniqueness return one durable result |
+| Duplicate event reserves stock twice | Inventory and Order persist event IDs in service-owned inboxes with the business transition |
+| Partial checkout loses an integration event | Order and Inventory persist domain state and outbox rows in the same local transaction |
+| Negative stock during concurrent checkout | Inventory uses conditional updates, deterministic lock order, and database constraints |
+| Address or cart data leaks through telemetry | Structured logs contain identifiers and outcomes only; addresses, tokens, cookies, and item payloads are excluded |
+| Reservation outcome never arrives | Saga timeout and reservation expiry produce explicit cancellation or manual-review behavior and metrics |

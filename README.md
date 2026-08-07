@@ -4,22 +4,24 @@ MarketFlow is a multi-vendor e-commerce platform implemented as independently ow
 contexts. The authoritative product and engineering specification is
 [`docs/engineering-plan.md`](docs/engineering-plan.md).
 
-## Milestone 2 scope
+## Milestone 3 scope
 
-The current milestone adds Catalog, Inventory, and Search to the Identity and Seller foundation.
-It provides seller-owned products and variants, controlled categories, decimal prices, publication
-validation, media metadata, concurrency-safe stock, reservation foundations, transactional domain
-events, and a rebuildable OpenSearch product projection.
+The current milestone adds expiring Redis carts and durable checkout/order orchestration to the
+Identity, Seller, Catalog, Inventory, and Search foundation. It provides guest and authenticated
+carts, deterministic cart merging, advisory price estimates, checkout revalidation, immutable
+order snapshots, idempotent order creation, and an initial inventory-reservation Saga.
 
 This remains an API-first backend. It does not contain a storefront, seller portal, or admin UI.
-Carts, checkout, payments, order completion, notification delivery, and fulfillment remain future
-milestones.
+Completed payment processing, final order confirmation, notification delivery, and fulfillment
+remain future milestones.
 
 Foundation evidence is recorded in [`docs/milestones/m0-completion.md`](docs/milestones/m0-completion.md).
 Milestone 1 evidence is recorded in
 [`docs/milestones/milestone-01-completion.md`](docs/milestones/milestone-01-completion.md).
 Milestone 2 evidence is recorded in
 [`docs/milestones/milestone-02-completion.md`](docs/milestones/milestone-02-completion.md).
+Milestone 3 evidence is recorded in
+[`docs/milestones/milestone-03-completion.md`](docs/milestones/milestone-03-completion.md).
 
 ## Prerequisites
 
@@ -60,6 +62,8 @@ The Compose environment exposes these local-only endpoints:
 | Catalog service | http://localhost:8083/actuator/health/readiness |
 | Inventory service | http://localhost:8084/actuator/health/readiness |
 | Search service | http://localhost:8085/actuator/health/readiness |
+| Cart service | http://localhost:8086/actuator/health/readiness |
+| Order service | http://localhost:8087/actuator/health/readiness |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 | RabbitMQ management | http://localhost:15672 |
@@ -82,3 +86,5 @@ scripts/        cross-platform development and validation entry points
 ```
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for branch, commit, quality, and security expectations.
+Operational details for this milestone are in
+[`docs/runbooks/cart-checkout-local.md`](docs/runbooks/cart-checkout-local.md).
