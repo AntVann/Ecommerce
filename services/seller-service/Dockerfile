@@ -10,6 +10,8 @@ COPY services/seller-service/pom.xml services/seller-service/pom.xml
 COPY services/catalog-service/pom.xml services/catalog-service/pom.xml
 COPY services/inventory-service/pom.xml services/inventory-service/pom.xml
 COPY services/search-service/pom.xml services/search-service/pom.xml
+COPY services/cart-service/pom.xml services/cart-service/pom.xml
+COPY services/order-service/pom.xml services/order-service/pom.xml
 RUN chmod +x mvnw && ./mvnw -B -pl services/seller-service -am dependency:go-offline
 COPY services/seller-service/src services/seller-service/src
 RUN ./mvnw -B -pl services/seller-service -am package -DskipTests

@@ -97,6 +97,21 @@ services:
       retries: 20
     restart: unless-stopped
 
+  order-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: marketflow_order
+      POSTGRES_USER: ${ORDER_DATABASE_USER:-order_app}
+      POSTGRES_PASSWORD: ${ORDER_DATABASE_PASSWORD:-local-development-only}
+    ports: ["5438:5432"]
+    volumes: [order-postgres-data:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
   kafka:
     image: apache/kafka:4.3.1
     environment:
@@ -138,6 +153,7 @@ services:
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic marketflow.seller.events.v1 --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic marketflow.catalog.events.v1 --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic marketflow.inventory.events.v1 --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic marketflow.order.events.v1 --partitions 3 --replication-factor 1
     restart: "no"
 
   rabbitmq:
@@ -423,6 +439,73 @@ services:
       start_period: 45s
     restart: unless-stopped
 
+  cart-service:
+    build:
+      context: .
+      dockerfile: services/cart-service/Dockerfile
+    environment:
+      MARKETFLOW_ENVIRONMENT: local
+      SERVER_PORT: 8086
+      REDIS_HOST: redis
+      IDENTITY_BASE_URL: http://identity-service:8081
+      CATALOG_BASE_URL: http://catalog-service:8083
+      IDENTITY_TOKEN_ISSUER: http://identity-service:8081
+      IDENTITY_TOKEN_AUDIENCE: marketflow-api
+      IDENTITY_INTERNAL_SERVICE_KEY: ${IDENTITY_INTERNAL_SERVICE_KEY:-local-development-only-change-me}
+      SECURE_COOKIES: "false"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+    ports: ["8086:8086"]
+    depends_on:
+      redis: {condition: service_healthy}
+      identity-service: {condition: service_healthy}
+      catalog-service: {condition: service_healthy}
+      otel-collector: {condition: service_started}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health/readiness | grep -q '\"status\":\"UP\"'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: .
+      dockerfile: services/order-service/Dockerfile
+    environment:
+      MARKETFLOW_ENVIRONMENT: local
+      SERVER_PORT: 8087
+      ORDER_DATABASE_URL: jdbc:postgresql://order-postgres:5432/marketflow_order
+      ORDER_DATABASE_USER: ${ORDER_DATABASE_USER:-order_app}
+      ORDER_DATABASE_PASSWORD: ${ORDER_DATABASE_PASSWORD:-local-development-only}
+      IDENTITY_BASE_URL: http://identity-service:8081
+      CART_BASE_URL: http://cart-service:8086
+      CATALOG_BASE_URL: http://catalog-service:8083
+      SELLER_BASE_URL: http://seller-service:8082
+      INVENTORY_BASE_URL: http://inventory-service:8084
+      IDENTITY_TOKEN_ISSUER: http://identity-service:8081
+      IDENTITY_TOKEN_AUDIENCE: marketflow-api
+      IDENTITY_INTERNAL_SERVICE_KEY: ${IDENTITY_INTERNAL_SERVICE_KEY:-local-development-only-change-me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+    ports: ["8087:8087"]
+    depends_on:
+      order-postgres: {condition: service_healthy}
+      cart-service: {condition: service_healthy}
+      seller-service: {condition: service_healthy}
+      inventory-service: {condition: service_healthy}
+      kafka-init: {condition: service_completed_successfully}
+      otel-collector: {condition: service_started}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health/readiness | grep -q '\"status\":\"UP\"'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 45s
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v3.13.1
     command:
@@ -446,6 +529,10 @@ services:
       inventory-service:
         condition: service_healthy
       search-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+      order-service:
         condition: service_healthy
     restart: unless-stopped
 
@@ -482,6 +569,7 @@ volumes:
   catalog-postgres-data:
   inventory-postgres-data:
   search-postgres-data:
+  order-postgres-data:
   kafka-data:
   rabbitmq-data:
   redis-data:
