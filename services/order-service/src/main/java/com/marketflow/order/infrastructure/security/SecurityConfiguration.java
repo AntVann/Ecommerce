@@ -47,7 +47,7 @@ public class SecurityConfiguration {
         authorities.setAuthorityPrefix("ROLE_");
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(authorities);
-        return http.csrf(c -> c.disable())
+        return http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/**"))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         r ->

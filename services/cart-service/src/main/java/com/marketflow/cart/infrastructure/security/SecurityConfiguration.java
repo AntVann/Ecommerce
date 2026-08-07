@@ -38,7 +38,10 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain security(HttpSecurity http, GuestCsrfFilter guestCsrf) throws Exception {
-        return http.csrf(csrf -> csrf.disable())
+        return http.csrf(
+                        csrf ->
+                                csrf.ignoringRequestMatchers(
+                                        "/api/v1/cart", "/api/v1/cart/**", "/internal/v1/**"))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         r ->
