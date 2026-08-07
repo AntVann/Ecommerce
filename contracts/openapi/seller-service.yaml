@@ -8,6 +8,15 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /internal/v1/sellers/status-validations:
+    post:
+      summary: Batch-resolve current seller status for checkout
+      operationId: validateSellerStatuses
+      security: [{internalServiceKey: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/SellerStatusValidationRequest"}}}}
+      responses:
+        "200": {description: Current status for each distinct requested seller, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/SellerStatusValidation"}}}}}
+        "401": {$ref: "#/components/responses/Problem"}
   /internal/v1/sellers/{sellerId}/authorization:
     get:
       summary: Authorize a seller-scoped service operation
@@ -225,3 +234,5 @@ components:
       required: [role]
       properties: {role: {$ref: "#/components/schemas/SellerRole"}}
       additionalProperties: false
+    SellerStatusValidationRequest: {type: object, required: [sellerIds], properties: {sellerIds: {type: array, minItems: 1, maxItems: 100, items: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}}, additionalProperties: false}
+    SellerStatusValidation: {type: object, required: [sellerId, status], properties: {sellerId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, status: {type: string, enum: [PENDING_REVIEW, APPROVED, REJECTED, SUSPENDED, CLOSED, NOT_FOUND]}, version: {type: [integer, "null"], minimum: 1}}, additionalProperties: false}

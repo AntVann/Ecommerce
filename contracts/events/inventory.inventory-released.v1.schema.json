@@ -1,1 +1,31 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://marketflow.dev/schemas/events/inventory.inventory-released.v1.schema.json","allOf":[{"$ref":"event-envelope.v1.schema.json"},{"type":"object","properties":{"eventType":{"const":"inventory.inventory-released.v1"},"data":{"$ref":"#/$defs/inventory"}}}],"$defs":{"inventory":{"type":"object","required":["variantId","sellerId","onHand","reserved","available","details"],"properties":{"variantId":{"type":"string","format":"uuid"},"sellerId":{"type":"string","format":"uuid"},"onHand":{"type":"integer","minimum":0},"reserved":{"type":"integer","minimum":0},"available":{"type":"integer","minimum":0},"details":{"type":"object"}},"additionalProperties":false}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketflow.dev/schemas/events/inventory.inventory-released.v1.schema.json",
+  "allOf": [
+    {"$ref": "event-envelope.v1.schema.json"},
+    {"type": "object", "properties": {"eventType": {"const": "inventory.inventory-released.v1"}, "data": {"$ref": "#/$defs/inventory"}}}
+  ],
+  "$defs": {
+    "inventory": {
+      "type": "object",
+      "required": ["variantId", "sellerId", "onHand", "reserved", "available", "details"],
+      "properties": {
+        "variantId": {"type": "string", "format": "uuid"},
+        "sellerId": {"type": "string", "format": "uuid"},
+        "onHand": {"type": "integer", "minimum": 0},
+        "reserved": {"type": "integer", "minimum": 0},
+        "available": {"type": "integer", "minimum": 0},
+        "details": {
+          "type": "object",
+          "properties": {
+            "referenceId": {"type": "string", "format": "uuid"},
+            "quantity": {"type": "integer", "minimum": 1},
+            "reasonCode": {"type": "string"}
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -3,7 +3,7 @@ info:
   title: MarketFlow Event Contracts
   version: 1.0.0
   description: >-
-    Versioned Identity, Seller, Catalog, and Inventory events using the shared MarketFlow envelope.
+    Versioned Identity, Seller, Catalog, Inventory, and Order events using the shared MarketFlow envelope.
 defaultContentType: application/json
 channels:
   identityEvents:
@@ -31,6 +31,10 @@ channels:
       inventoryReserved: {$ref: "#/components/messages/InventoryReserved"}
       inventoryReservationFailed: {$ref: "#/components/messages/InventoryReservationFailed"}
       inventoryReleased: {$ref: "#/components/messages/InventoryReleased"}
+  orderEvents:
+    address: marketflow.order.events.v1
+    messages:
+      orderCreated: {$ref: "#/components/messages/OrderCreated"}
 operations:
   publishIdentityEvents:
     action: send
@@ -43,6 +47,15 @@ operations:
     channel: {$ref: "#/channels/catalogEvents"}
   publishInventoryEvents:
     action: send
+    channel: {$ref: "#/channels/inventoryEvents"}
+  publishOrderEvents:
+    action: send
+    channel: {$ref: "#/channels/orderEvents"}
+  inventoryConsumesOrderEvents:
+    action: receive
+    channel: {$ref: "#/channels/orderEvents"}
+  orderConsumesInventoryEvents:
+    action: receive
     channel: {$ref: "#/channels/inventoryEvents"}
 components:
   messages:
@@ -85,6 +98,9 @@ components:
     InventoryReleased:
       name: inventory.inventory-released.v1
       payload: {$ref: "../events/inventory.inventory-released.v1.schema.json"}
+    OrderCreated:
+      name: order.order-created.v1
+      payload: {$ref: "../events/order.order-created.v1.schema.json"}
   schemas:
     EventEnvelope:
       $ref: "../events/event-envelope.v1.schema.json"

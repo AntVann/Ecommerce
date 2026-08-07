@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: MarketFlow Cart API
+  version: 1.0.0
+  description: Expiring guest and authenticated customer carts with advisory prices.
+servers: [{url: "http://localhost:8086"}]
+security: [{bearerAuth: []}]
+paths:
+  /api/v1/cart:
+    get:
+      summary: Get the current actor's cart
+      operationId: getCart
+      security: [{bearerAuth: []}, {guestCartCookie: []}]
+      responses: {"200": {$ref: "#/components/responses/Cart"}}
+    delete:
+      summary: Clear the current cart
+      operationId: clearCart
+      security: [{bearerAuth: []}, {guestCartCookie: [], csrfToken: []}]
+      parameters: [{$ref: "./common-components.yaml#/components/parameters/IfMatch"}]
+      responses: {"204": {description: Cart cleared}}
+  /api/v1/cart/items:
+    post:
+      summary: Add or combine a cart item
+      operationId: addCartItem
+      security: [{bearerAuth: []}, {guestCartCookie: [], csrfToken: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/CartItemMutation"}}}}
+      responses: {"200": {$ref: "#/components/responses/Cart"}, "422": {$ref: "#/components/responses/Problem"}}
+  /api/v1/cart/items/{variantId}:
+    patch:
+      summary: Replace a cart item quantity
+      operationId: updateCartItem
+      security: [{bearerAuth: []}, {guestCartCookie: [], csrfToken: []}]
+      parameters: [{$ref: "#/components/parameters/VariantId"}, {$ref: "./common-components.yaml#/components/parameters/IfMatch"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/QuantityMutation"}}}}
+      responses: {"200": {$ref: "#/components/responses/Cart"}, "409": {$ref: "#/components/responses/Problem"}}
+    delete:
+      summary: Remove a cart item
+      operationId: removeCartItem
+      security: [{bearerAuth: []}, {guestCartCookie: [], csrfToken: []}]
+      parameters: [{$ref: "#/components/parameters/VariantId"}, {$ref: "./common-components.yaml#/components/parameters/IfMatch"}]
+      responses: {"200": {$ref: "#/components/responses/Cart"}}
+  /api/v1/cart/merge:
+    post:
+      summary: Merge the guest cart into the authenticated customer cart
+      operationId: mergeGuestCart
+      security: [{bearerAuth: [], guestCartCookie: [], csrfToken: []}]
+      responses: {"200": {$ref: "#/components/responses/Cart"}, "401": {$ref: "#/components/responses/Problem"}}
+  /internal/v1/carts/checkout-snapshots:
+    post:
+      summary: Read a version-matched customer-owned checkout snapshot
+      operationId: getCheckoutCartSnapshot
+      security: [{internalServiceKey: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/CheckoutSnapshotRequest"}}}}
+      responses: {"200": {$ref: "#/components/responses/Cart"}, "409": {$ref: "#/components/responses/Problem"}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+    guestCartCookie: {type: apiKey, in: cookie, name: MARKETFLOW_GUEST_CART}
+    csrfToken: {type: apiKey, in: header, name: X-CSRF-Token}
+    internalServiceKey: {type: apiKey, in: header, name: X-Internal-Service-Key}
+  parameters:
+    VariantId: {name: variantId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+  responses:
+    Cart: {description: Cart with advisory estimates, headers: {ETag: {$ref: "./common-components.yaml#/components/headers/ETag"}}, content: {application/json: {schema: {$ref: "#/components/schemas/Cart"}}}}
+    Problem: {description: RFC 9457 problem details, content: {application/problem+json: {schema: {$ref: "./problem-details.yaml#/components/schemas/ProblemDetails"}}}}
+  schemas:
+    QuantityMutation: {type: object, required: [quantity], properties: {quantity: {type: integer, minimum: 1, maximum: 99}}, additionalProperties: false}
+    CartItemMutation: {type: object, required: [variantId, quantity], properties: {variantId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, quantity: {type: integer, minimum: 1, maximum: 99}}, additionalProperties: false}
+    CheckoutSnapshotRequest: {type: object, required: [customerId, cartId, cartVersion], properties: {customerId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, cartId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, cartVersion: {type: integer, minimum: 1}}, additionalProperties: false}
+    CartItem:
+      type: object
+      required: [productId, variantId, quantity, validityStatus]
+      properties:
+        productId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        variantId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        quantity: {type: integer, minimum: 1, maximum: 99}
+        estimatedUnitPrice: {$ref: "./common-components.yaml#/components/schemas/Money"}
+        estimatedAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+        validityStatus: {type: string, enum: [VALID, PRODUCT_INACTIVE, VARIANT_INACTIVE, SELLER_INACTIVE, NOT_FOUND, PRICE_CHANGED, VALIDATION_UNAVAILABLE]}
+        validityReason: {type: [string, "null"], maxLength: 500}
+      additionalProperties: false
+    Cart:
+      type: object
+      required: [cartId, actorType, version, items, createdAt, updatedAt, expiresAt]
+      properties:
+        cartId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        actorType: {type: string, enum: [GUEST, CUSTOMER]}
+        version: {type: integer, minimum: 1}
+        items: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/CartItem"}}
+        createdAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+        updatedAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+        expiresAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+      additionalProperties: false
