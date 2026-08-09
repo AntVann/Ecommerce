@@ -38,7 +38,7 @@ class SellerMigrationIT {
                                 POSTGRES.getPassword())
                         .locations("classpath:db/migration")
                         .load();
-        assertThat(latest.migrate().migrationsExecuted).isEqualTo(4);
-        assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("5");
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(5);
+        assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("6");
     }
 }
