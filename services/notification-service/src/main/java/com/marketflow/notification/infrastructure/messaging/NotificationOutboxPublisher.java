@@ -3,14 +3,16 @@ package com.marketflow.notification.infrastructure.messaging;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.UUID;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty(
-        name = "marketflow.notification.outbox.enabled", havingValue = "true", matchIfMissing = true)
+        name = "marketflow.notification.outbox.enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class NotificationOutboxPublisher {
     private final JdbcTemplate jdbc;
     private final RabbitTemplate rabbit;
