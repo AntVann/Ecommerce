@@ -45,7 +45,7 @@ wait_prometheus_target() {
   return 1
 }
 
-SMOKE_CORRELATION_ID=m4-infrastructure-smoke
+SMOKE_CORRELATION_ID=m5-infrastructure-smoke
 wait_http "sample readiness" "http://localhost:8080/actuator/health/readiness" \
   "X-Correlation-ID: $SMOKE_CORRELATION_ID"
 grep -q '"status":"UP"' /tmp/marketflow-smoke-response
@@ -56,7 +56,7 @@ grep -q '"status":"UP"' /tmp/marketflow-smoke-response
 wait_http "seller readiness" "http://localhost:8082/actuator/health/readiness" \
   "X-Correlation-ID: $SMOKE_CORRELATION_ID"
 grep -q '"status":"UP"' /tmp/marketflow-smoke-response
-for service in catalog:8083 inventory:8084 search:8085 cart:8086 order:8087 payment:8088; do
+for service in catalog:8083 inventory:8084 search:8085 cart:8086 order:8087 payment:8088 notification:8089; do
   name=${service%:*}
   port=${service#*:}
   wait_http "$name readiness" "http://localhost:$port/actuator/health/readiness" \
@@ -70,7 +70,7 @@ grep -q 'authentication_failure_total' /tmp/marketflow-smoke-response
 wait_http "seller metrics" "http://localhost:8082/actuator/prometheus"
 grep -q 'authorization_denied_total' /tmp/marketflow-smoke-response
 wait_http "Prometheus API" "http://localhost:9090/api/v1/targets"
-for job in sample-service identity-service seller-service catalog-service inventory-service search-service cart-service order-service payment-service; do
+for job in sample-service identity-service seller-service catalog-service inventory-service search-service cart-service order-service payment-service notification-service; do
   wait_prometheus_target "$job"
 done
 wait_http "Grafana" "http://localhost:3000/api/health"
@@ -86,6 +86,7 @@ docker compose exec -T inventory-postgres pg_isready -U inventory_app -d marketf
 docker compose exec -T search-postgres pg_isready -U search_app -d marketflow_search
 docker compose exec -T order-postgres pg_isready -U order_app -d marketflow_order
 docker compose exec -T payment-postgres pg_isready -U payment_app -d marketflow_payment
+docker compose exec -T notification-postgres pg_isready -U notification_app -d marketflow_notification
 docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list | \
   grep -q marketflow.identity.events.v1
 docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list | \
@@ -104,8 +105,8 @@ docker compose exec -T redis redis-cli ping | grep -q PONG
 sleep 3
 wait_http "Tempo trace search" "http://localhost:3200/api/search?limit=20"
 grep -q '"traceID"' /tmp/marketflow-smoke-response
-docker compose logs --no-color --tail 300 sample-service identity-service seller-service catalog-service inventory-service search-service cart-service order-service payment-service | \
+docker compose logs --no-color --tail 300 sample-service identity-service seller-service catalog-service inventory-service search-service cart-service order-service payment-service notification-service | \
   grep -q "\"correlationId\":\"$SMOKE_CORRELATION_ID\""
 echo "PASS structured correlation log"
 
-echo "All MarketFlow Milestone 4 infrastructure smoke checks passed."
+echo "All MarketFlow Milestone 5 infrastructure smoke checks passed."

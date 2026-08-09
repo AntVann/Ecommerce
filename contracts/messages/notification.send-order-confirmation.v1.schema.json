@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketflow.dev/schemas/messages/notification.send-order-confirmation.v1.schema.json",
+  "type": "object",
+  "required": ["jobId", "sourceEventId", "orderId", "customerId", "templateKey", "templateVersion"],
+  "properties": {
+    "jobId": {"type": "string", "format": "uuid"},
+    "sourceEventId": {"type": "string", "format": "uuid"},
+    "orderId": {"type": "string", "format": "uuid"},
+    "customerId": {"type": "string", "format": "uuid"},
+    "templateKey": {"const": "order-confirmation"},
+    "templateVersion": {"type": "integer", "minimum": 1},
+    "correlationId": {"type": "string", "maxLength": 128},
+    "causationId": {"type": ["string", "null"], "maxLength": 128}
+  },
+  "additionalProperties": false
+}

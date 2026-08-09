@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: MarketFlow Notification Operations API
+  version: 1.0.0
+  description: Delivery status and safe operator redrive for notification jobs.
+servers: [{url: "http://localhost:8089"}]
+security: [{bearerAuth: []}]
+paths:
+  /api/v1/notifications/{jobId}:
+    get:
+      summary: Get notification delivery status
+      operationId: getNotificationStatus
+      parameters: [{$ref: "#/components/parameters/JobId"}]
+      responses:
+        "200": {description: Delivery status, content: {application/json: {schema: {$ref: "#/components/schemas/NotificationStatus"}}}}
+        "403": {$ref: "#/components/responses/Problem"}
+        "404": {$ref: "#/components/responses/Problem"}
+  /api/v1/admin/notifications/{jobId}/redrive:
+    post:
+      summary: Redrive a dead-lettered notification job
+      operationId: redriveNotification
+      parameters:
+        - {$ref: "#/components/parameters/JobId"}
+        - {$ref: "./common-components.yaml#/components/parameters/IdempotencyKey"}
+      responses:
+        "202": {description: Redrive accepted, content: {application/json: {schema: {$ref: "#/components/schemas/NotificationStatus"}}}}
+        "403": {$ref: "#/components/responses/Problem"}
+        "409": {$ref: "#/components/responses/Problem"}
+        "404": {$ref: "#/components/responses/Problem"}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}}
+  parameters:
+    JobId: {name: jobId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+  responses:
+    Problem: {description: RFC 9457 problem details, content: {application/problem+json: {schema: {$ref: "./problem-details.yaml#/components/schemas/ProblemDetails"}}}}
+  schemas:
+    NotificationStatus:
+      type: object
+      required: [jobId, kind, status, templateKey, templateVersion, attempts, createdAt, updatedAt]
+      properties:
+        jobId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        kind: {type: string, enum: [ORDER_CONFIRMATION, SHIPMENT]}
+        status: {type: string, enum: [QUEUED, PROCESSING, DELIVERED, RETRY_SCHEDULED, DEAD_LETTERED]}
+        templateKey: {type: string, maxLength: 80}
+        templateVersion: {type: integer, minimum: 1}
+        attempts: {type: integer, minimum: 0}
+        lastFailureCode: {type: [string, "null"], maxLength: 80}
+        createdAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+        updatedAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+      additionalProperties: false
