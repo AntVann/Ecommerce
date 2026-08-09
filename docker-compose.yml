@@ -608,6 +608,7 @@ services:
       - --web.enable-lifecycle
     volumes:
       - ./platform/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./platform/observability/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"

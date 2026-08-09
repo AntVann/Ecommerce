@@ -13,3 +13,7 @@ test-results/
 .DS_Store
 Thumbs.db
 .docker/
+tests/performance/results/
+tests/chaos/results/
+backups/
+*.dump
