@@ -63,5 +63,23 @@ public final class CheckoutModels {
             long version,
             Instant createdAt,
             Instant updatedAt,
+            List<OrderItem> items,
+            UUID paymentId,
+            String paymentState) {}
+
+    public record OrderPage(List<OrderView> items, String nextCursor) {}
+
+    public record SellerOrderView(
+            UUID id,
+            String status,
+            String currency,
+            BigDecimal sellerSubtotal,
+            Instant createdAt,
+            Instant updatedAt,
             List<OrderItem> items) {}
+
+    public record SellerOrderPage(List<SellerOrderView> items, String nextCursor) {}
+
+    public record StatusHistory(
+            String previousStatus, String newStatus, String reason, Instant occurredAt) {}
 }

@@ -42,7 +42,9 @@ public final class InternalSellerController {
         var seller = repository.findSeller(sellerId, false);
         boolean approved =
                 seller.isPresent()
-                        && "APPROVED".equals(seller.get().status())
+                        && ("APPROVED".equals(seller.get().status())
+                                || ("ORDER_READ".equals(permission)
+                                        && "SUSPENDED".equals(seller.get().status())))
                         && repository.hasPermission(sellerId, userId, permission);
         return new AuthorizationResponse(
                 sellerId,

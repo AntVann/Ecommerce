@@ -130,7 +130,9 @@ class CheckoutServiceTest {
                                                 1,
                                                 Instant.now(),
                                                 Instant.now(),
-                                                List.of())));
+                                                List.of(),
+                                                null,
+                                                null)));
         OrderView result = service.checkout(customer, "abcdefghijklmnop", command, "c");
         assertThat(result.status()).isEqualTo("PENDING");
         verify(gateways).requireActiveCustomer(customer);
@@ -138,6 +140,17 @@ class CheckoutServiceTest {
         verify(repository, times(1)).orderCreatedOutbox(any(), eq(900L), eq("c"), any());
         verify(repository, times(1))
                 .complete(eq(customer), any(), eq("abcdefghijklmnop"), any(), eq(202), any());
+    }
+
+    @Test
+    void statusHistoryRequiresCustomerOwnership() {
+        UUID orderId = UUID.randomUUID();
+        when(repository.owned(orderId, customer)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.history(customer, orderId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("not found");
+        verify(repository, org.mockito.Mockito.never()).statusHistory(orderId);
     }
 
     private OrderView view() {
@@ -159,7 +172,9 @@ class CheckoutServiceTest {
                 1,
                 Instant.now(),
                 Instant.now(),
-                List.of());
+                List.of(),
+                null,
+                null);
     }
 
     private String hash(CheckoutCommand command) {
