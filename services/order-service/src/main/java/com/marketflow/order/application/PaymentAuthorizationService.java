@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -23,6 +24,7 @@ public class PaymentAuthorizationService {
     private final Clock clock;
     private final TransactionTemplate transactions;
 
+    @Autowired
     public PaymentAuthorizationService(
             OrderRepository repository,
             OrderSagaGateways gateways,
