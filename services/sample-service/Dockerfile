@@ -14,6 +14,7 @@ COPY services/search-service/pom.xml services/search-service/pom.xml
 COPY services/cart-service/pom.xml services/cart-service/pom.xml
 COPY services/order-service/pom.xml services/order-service/pom.xml
 COPY services/payment-service/pom.xml services/payment-service/pom.xml
+COPY services/notification-service/pom.xml services/notification-service/pom.xml
 RUN chmod +x mvnw && ./mvnw -B -pl services/sample-service -am dependency:go-offline
 
 COPY services/sample-service/src services/sample-service/src
