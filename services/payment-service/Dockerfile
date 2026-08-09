@@ -8,5 +8,6 @@ RUN addgroup -S marketflow && adduser -S -G marketflow -u 10003 marketflow
 WORKDIR /app
 COPY --from=build /workspace/services/payment-service/target/payment-service-*.jar app.jar
 USER 10003:10003
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
 EXPOSE 8088
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]

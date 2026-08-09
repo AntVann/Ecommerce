@@ -10,5 +10,6 @@ SeaweedFS supplies the S3-compatible emulator because the MinIO community reposi
 in April 2026. Business services depend on an object-storage port, not this local implementation.
 
 The stack is intentionally single-node and disables transport security inside the isolated Docker
-network. Production-style security, replicas, managed stores, and Kubernetes resources belong to
-Milestone 6.
+network. Production-style security, replicas, and Kubernetes resources belong to Milestone 6. The
+portfolio deployment profile remains free/local: managed store endpoints are configurable, but no
+paid cloud resources are required or provisioned.
