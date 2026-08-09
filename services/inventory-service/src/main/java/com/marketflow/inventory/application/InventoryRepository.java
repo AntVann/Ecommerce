@@ -125,9 +125,18 @@ public class InventoryRepository {
     }
 
     public Optional<Reservation> reservation(UUID referenceId) {
+        return reservation(referenceId, false);
+    }
+
+    public Optional<Reservation> reservationForUpdate(UUID referenceId) {
+        return reservation(referenceId, true);
+    }
+
+    private Optional<Reservation> reservation(UUID referenceId, boolean forUpdate) {
         return jdbc
                 .query(
-                        "SELECT id,reference_id,status,expires_at,created_at,updated_at FROM inventory_reservation WHERE reference_id=?",
+                        "SELECT id,reference_id,status,expires_at,created_at,updated_at FROM inventory_reservation WHERE reference_id=?"
+                                + (forUpdate ? " FOR UPDATE" : ""),
                         (rs, row) ->
                                 new Reservation(
                                         rs.getObject("id", UUID.class),
@@ -142,6 +151,20 @@ public class InventoryRepository {
                         referenceId)
                 .stream()
                 .findFirst();
+    }
+
+    public void commit(UUID variantId, int quantity, Instant now) {
+        int changed =
+                jdbc.update(
+                        "UPDATE inventory_item SET on_hand=on_hand-?,reserved=reserved-?,version=version+1,updated_at=? WHERE variant_id=? AND on_hand>=? AND reserved>=?",
+                        quantity,
+                        quantity,
+                        db(now),
+                        variantId,
+                        quantity,
+                        quantity);
+        if (changed != 1)
+            throw new IllegalStateException("Reservation invariant violated during commitment");
     }
 
     public List<Reservation> expiredReservations(Instant now, int limit) {
@@ -219,12 +242,33 @@ public class InventoryRepository {
             String correlationId,
             Map<String, Object> data,
             Instant now) {
+        outbox(eventType, "InventoryItem", aggregateId, version, correlationId, data, now);
+    }
+
+    public void reservationOutbox(
+            String eventType,
+            UUID reservationId,
+            long version,
+            String correlationId,
+            Map<String, Object> data,
+            Instant now) {
+        outbox(eventType, "Reservation", reservationId, version, correlationId, data, now);
+    }
+
+    private void outbox(
+            String eventType,
+            String aggregateType,
+            UUID aggregateId,
+            long version,
+            String correlationId,
+            Map<String, Object> data,
+            Instant now) {
         UUID eventId = UUID.randomUUID();
         Map<String, Object> envelope =
                 Map.ofEntries(
                         Map.entry("eventId", eventId),
                         Map.entry("eventType", eventType),
-                        Map.entry("aggregateType", "InventoryItem"),
+                        Map.entry("aggregateType", aggregateType),
                         Map.entry("aggregateId", aggregateId),
                         Map.entry("aggregateVersion", version),
                         Map.entry("occurredAt", now),
@@ -233,9 +277,10 @@ public class InventoryRepository {
                         Map.entry("schemaVersion", 1),
                         Map.entry("data", data));
         jdbc.update(
-                "INSERT INTO outbox_event(event_id,event_type,aggregate_type,aggregate_id,aggregate_version,correlation_id,payload,occurred_at,next_attempt_at) VALUES (?,?,'InventoryItem',?,?,?,CAST(? AS jsonb),?,?)",
+                "INSERT INTO outbox_event(event_id,event_type,aggregate_type,aggregate_id,aggregate_version,correlation_id,payload,occurred_at,next_attempt_at) VALUES (?,?,?,?,?,?,CAST(? AS jsonb),?,?)",
                 eventId,
                 eventType,
+                aggregateType,
                 aggregateId,
                 version,
                 correlationId,

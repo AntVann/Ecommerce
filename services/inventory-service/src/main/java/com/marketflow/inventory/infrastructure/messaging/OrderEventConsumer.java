@@ -23,14 +23,31 @@ public final class OrderEventConsumer {
     @KafkaListener(topics = "marketflow.order.events.v1", groupId = "inventory-order-v1")
     public void consume(String payload) throws Exception {
         JsonNode root = mapper.readTree(payload);
-        if (!"order.order-created.v1".equals(root.path("eventType").asText())) return;
+        String type = root.path("eventType").asText();
+        if (!"order.order-created.v1".equals(type)
+                && !"order.inventory-confirmation-requested.v1".equals(type)
+                && !"order.inventory-release-requested.v1".equals(type)) return;
         UUID eventId = UUID.fromString(root.get("eventId").asText());
         UUID orderId = UUID.fromString(root.get("aggregateId").asText());
         String correlationId = root.path("correlationId").asText("unknown");
         JsonNode data = root.get("data");
-        if (!orderId.toString().equals(data.path("orderId").asText())) {
+        UUID dataOrderId = UUID.fromString(data.path("orderId").asText());
+        UUID referenceId = UUID.fromString(data.path("referenceId").asText(dataOrderId.toString()));
+        if (!orderId.equals(dataOrderId) || !orderId.equals(referenceId)) {
             throw new IllegalArgumentException(
-                    "Order event aggregateId and data.orderId must match");
+                    "Order event aggregateId, data.orderId, and data.referenceId must match");
+        }
+        if ("order.inventory-confirmation-requested.v1".equals(type)) {
+            inventory.confirmOrderReservation(eventId, referenceId, correlationId);
+            return;
+        }
+        if ("order.inventory-release-requested.v1".equals(type)) {
+            inventory.releaseOrderReservation(
+                    eventId,
+                    referenceId,
+                    data.path("reasonCode").asText("PAYMENT_FAILED"),
+                    correlationId);
+            return;
         }
         var lines = new ArrayList<InventoryService.ReserveLine>();
         for (JsonNode line : data.withArray("lines")) {

@@ -116,6 +116,14 @@ public final class InventoryController {
         return inventory.release(referenceId, correlation());
     }
 
+    @PostMapping("/internal/v1/inventory/reservations/{referenceId}/confirm")
+    InventoryRepository.Reservation confirm(
+            @RequestHeader(name = "X-Internal-Service-Key", required = false) String key,
+            @PathVariable UUID referenceId) {
+        requireKey(key);
+        return inventory.confirm(referenceId, correlation());
+    }
+
     private void requireKey(String supplied) {
         byte[] expected = properties.internalServiceKey().getBytes(StandardCharsets.UTF_8);
         byte[] actual = supplied == null ? new byte[0] : supplied.getBytes(StandardCharsets.UTF_8);

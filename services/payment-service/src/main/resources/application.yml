@@ -1,0 +1,40 @@
+spring:
+  application.name: marketflow-payment-service
+  datasource:
+    url: ${PAYMENT_DATABASE_URL:jdbc:postgresql://localhost:5439/marketflow_payment}
+    username: ${PAYMENT_DATABASE_USER:payment_app}
+    password: ${PAYMENT_DATABASE_PASSWORD:local-development-only}
+  flyway.enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties.enable.idempotence: true
+server:
+  port: ${SERVER_PORT:8088}
+  shutdown: graceful
+marketflow:
+  payment:
+    security.internal-service-key: ${PAYMENT_INTERNAL_SERVICE_KEY:local-development-only-change-me}
+    fake-provider:
+      available: ${FAKE_PAYMENT_PROVIDER_AVAILABLE:true}
+      callback-delay: ${FAKE_PAYMENT_CALLBACK_DELAY:1s}
+      duplicate-callbacks: ${FAKE_PAYMENT_DUPLICATE_CALLBACKS:2}
+      callback-signature: ${FAKE_PAYMENT_CALLBACK_SIGNATURE:local-fake-provider-signature}
+management:
+  endpoint.health:
+    probes.enabled: true
+    group.liveness.include: livenessState,ping
+    group.readiness.include: readinessState,db,fakePaymentProviderHealth
+  endpoints.web.exposure.include: health,info,prometheus
+  metrics.tags:
+    application: ${spring.application.name}
+    environment: ${MARKETFLOW_ENVIRONMENT:local}
+  opentelemetry.tracing.export.otlp.endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  tracing.sampling.probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+logging.structured.format.console: ecs

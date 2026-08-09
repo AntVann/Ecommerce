@@ -2,9 +2,11 @@ package com.marketflow.order.application;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
+import java.util.UUID;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class SagaMonitor {
@@ -25,5 +27,23 @@ public class SagaMonitor {
                     .atWarn()
                     .addKeyValue("saga.stale.count", stale.size())
                     .log("Order sagas await inventory beyond deadline");
+    }
+
+    @Scheduled(fixedDelayString = "${marketflow.order.payment-unknown-monitor-delay:60000}")
+    @Transactional
+    void monitorUnknownPayments() {
+        Instant now = Instant.now();
+        var stale = repository.stalePaymentUnknown(now);
+        for (UUID order : stale) {
+            if (repository.transition(
+                    order,
+                    "PAYMENT_PROCESSING",
+                    "MANUAL_REVIEW",
+                    "PAYMENT_UNKNOWN_TIMEOUT",
+                    "payment-reconciliation",
+                    now)) {
+                metrics.counter("order_payment_manual_review_total").increment();
+            }
+        }
     }
 }

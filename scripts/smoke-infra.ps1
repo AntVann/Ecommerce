@@ -62,7 +62,7 @@ function Wait-PrometheusTarget {
     throw "Prometheus did not report a healthy $Job target."
 }
 
-$smokeCorrelationId = 'm3-infrastructure-smoke'
+$smokeCorrelationId = 'm4-infrastructure-smoke'
 $readiness = Wait-Http -Name 'sample readiness' `
     -Uri 'http://localhost:8080/actuator/health/readiness' `
     -Headers @{ 'X-Correlation-ID' = $smokeCorrelationId }
@@ -90,7 +90,8 @@ foreach ($service in @(
     @{ Name = 'inventory'; Port = 8084 },
     @{ Name = 'search'; Port = 8085 },
     @{ Name = 'cart'; Port = 8086 },
-    @{ Name = 'order'; Port = 8087 }
+    @{ Name = 'order'; Port = 8087 },
+    @{ Name = 'payment'; Port = 8088 }
 )) {
     $response = Wait-Http -Name "$($service.Name) readiness" `
         -Uri "http://localhost:$($service.Port)/actuator/health/readiness" `
@@ -114,7 +115,7 @@ if ((Get-ResponseContent -Response $sellerMetrics) -notmatch 'authorization_deni
 }
 
 Wait-Http -Name 'Prometheus API' -Uri 'http://localhost:9090/api/v1/targets' | Out-Null
-foreach ($job in @('sample-service', 'identity-service', 'seller-service', 'catalog-service', 'inventory-service', 'search-service', 'cart-service', 'order-service')) {
+foreach ($job in @('sample-service', 'identity-service', 'seller-service', 'catalog-service', 'inventory-service', 'search-service', 'cart-service', 'order-service', 'payment-service')) {
     Wait-PrometheusTarget -Job $job
 }
 
@@ -137,9 +138,11 @@ if ($LASTEXITCODE -ne 0) { throw 'Inventory PostgreSQL readiness check failed.' 
 if ($LASTEXITCODE -ne 0) { throw 'Search PostgreSQL readiness check failed.' }
 & docker compose exec -T order-postgres pg_isready -U order_app -d marketflow_order
 if ($LASTEXITCODE -ne 0) { throw 'Order PostgreSQL readiness check failed.' }
+& docker compose exec -T payment-postgres pg_isready -U payment_app -d marketflow_payment
+if ($LASTEXITCODE -ne 0) { throw 'Payment PostgreSQL readiness check failed.' }
 $kafkaTopics = (& docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list) -join [Environment]::NewLine
-if ($LASTEXITCODE -ne 0 -or $kafkaTopics -notmatch 'marketflow.identity.events.v1' -or $kafkaTopics -notmatch 'marketflow.seller.events.v1' -or $kafkaTopics -notmatch 'marketflow.catalog.events.v1' -or $kafkaTopics -notmatch 'marketflow.inventory.events.v1' -or $kafkaTopics -notmatch 'marketflow.order.events.v1') {
-    throw 'Milestone 3 Kafka topics were not provisioned.'
+if ($LASTEXITCODE -ne 0 -or $kafkaTopics -notmatch 'marketflow.identity.events.v1' -or $kafkaTopics -notmatch 'marketflow.seller.events.v1' -or $kafkaTopics -notmatch 'marketflow.catalog.events.v1' -or $kafkaTopics -notmatch 'marketflow.inventory.events.v1' -or $kafkaTopics -notmatch 'marketflow.order.events.v1' -or $kafkaTopics -notmatch 'marketflow.payment.events.v1') {
+    throw 'Milestone 4 Kafka topics were not provisioned.'
 }
 & docker compose exec -T rabbitmq rabbitmq-diagnostics -q ping
 if ($LASTEXITCODE -ne 0) { throw 'RabbitMQ readiness check failed.' }
@@ -153,10 +156,10 @@ if ($null -eq $traceJson.traces -or $traceJson.traces.Count -lt 1) {
     throw 'No sample-service trace reached Tempo.'
 }
 
-$serviceLogs = (& docker compose logs --no-color --tail 300 sample-service identity-service seller-service catalog-service inventory-service search-service cart-service order-service) -join [Environment]::NewLine
-if ($LASTEXITCODE -ne 0 -or $serviceLogs -notmatch '"correlationId":"m3-infrastructure-smoke"') {
+$serviceLogs = (& docker compose logs --no-color --tail 300 sample-service identity-service seller-service catalog-service inventory-service search-service cart-service order-service payment-service) -join [Environment]::NewLine
+if ($LASTEXITCODE -ne 0 -or $serviceLogs -notmatch '"correlationId":"m4-infrastructure-smoke"') {
     throw 'Structured service logs did not contain the smoke correlation ID.'
 }
 Write-Host 'PASS structured correlation log'
 
-Write-Host 'All MarketFlow Milestone 3 infrastructure smoke checks passed.'
+Write-Host 'All MarketFlow Milestone 4 infrastructure smoke checks passed.'

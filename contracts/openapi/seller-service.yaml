@@ -25,7 +25,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/SellerId"
         - {name: userId, in: query, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
-        - {name: permission, in: query, required: true, schema: {type: string, enum: [CATALOG_WRITE, INVENTORY_WRITE]}}
+        - {name: permission, in: query, required: true, schema: {type: string, enum: [CATALOG_WRITE, INVENTORY_WRITE, ORDER_READ]}}
       responses:
         "200": {description: Current seller status and authorization decision}
         "401": {$ref: "#/components/responses/Problem"}

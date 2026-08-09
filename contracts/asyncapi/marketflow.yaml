@@ -3,7 +3,7 @@ info:
   title: MarketFlow Event Contracts
   version: 1.0.0
   description: >-
-    Versioned Identity, Seller, Catalog, Inventory, and Order events using the shared MarketFlow envelope.
+    Versioned Identity, Seller, Catalog, Inventory, Order, and Payment events using the shared MarketFlow envelope.
 defaultContentType: application/json
 channels:
   identityEvents:
@@ -31,10 +31,24 @@ channels:
       inventoryReserved: {$ref: "#/components/messages/InventoryReserved"}
       inventoryReservationFailed: {$ref: "#/components/messages/InventoryReservationFailed"}
       inventoryReleased: {$ref: "#/components/messages/InventoryReleased"}
+      inventoryReservationConfirmed: {$ref: "#/components/messages/InventoryReservationConfirmed"}
+      inventoryReservationReleased: {$ref: "#/components/messages/InventoryReservationReleased"}
   orderEvents:
     address: marketflow.order.events.v1
     messages:
       orderCreated: {$ref: "#/components/messages/OrderCreated"}
+      orderConfirmed: {$ref: "#/components/messages/OrderConfirmed"}
+      orderPaymentFailed: {$ref: "#/components/messages/OrderPaymentFailed"}
+      inventoryConfirmationRequested: {$ref: "#/components/messages/InventoryConfirmationRequested"}
+      inventoryReleaseRequested: {$ref: "#/components/messages/InventoryReleaseRequested"}
+      manualReviewRequired: {$ref: "#/components/messages/ManualReviewRequired"}
+  paymentEvents:
+    address: marketflow.payment.events.v1
+    messages:
+      paymentAuthorized: {$ref: "#/components/messages/PaymentAuthorized"}
+      paymentDeclined: {$ref: "#/components/messages/PaymentDeclined"}
+      paymentFailed: {$ref: "#/components/messages/PaymentFailed"}
+      paymentUnknown: {$ref: "#/components/messages/PaymentUnknown"}
 operations:
   publishIdentityEvents:
     action: send
@@ -51,12 +65,18 @@ operations:
   publishOrderEvents:
     action: send
     channel: {$ref: "#/channels/orderEvents"}
+  publishPaymentEvents:
+    action: send
+    channel: {$ref: "#/channels/paymentEvents"}
   inventoryConsumesOrderEvents:
     action: receive
     channel: {$ref: "#/channels/orderEvents"}
   orderConsumesInventoryEvents:
     action: receive
     channel: {$ref: "#/channels/inventoryEvents"}
+  orderConsumesPaymentEvents:
+    action: receive
+    channel: {$ref: "#/channels/paymentEvents"}
 components:
   messages:
     UserRegistered:
@@ -98,9 +118,42 @@ components:
     InventoryReleased:
       name: inventory.inventory-released.v1
       payload: {$ref: "../events/inventory.inventory-released.v1.schema.json"}
+    InventoryReservationConfirmed:
+      name: inventory.inventory-reservation-confirmed.v1
+      payload: {$ref: "../events/inventory.inventory-reservation-confirmed.v1.schema.json"}
+    InventoryReservationReleased:
+      name: inventory.inventory-reservation-released.v1
+      payload: {$ref: "../events/inventory.inventory-reservation-released.v1.schema.json"}
     OrderCreated:
       name: order.order-created.v1
       payload: {$ref: "../events/order.order-created.v1.schema.json"}
+    OrderConfirmed:
+      name: order.order-confirmed.v1
+      payload: {$ref: "../events/order.order-confirmed.v1.schema.json"}
+    OrderPaymentFailed:
+      name: order.order-payment-failed.v1
+      payload: {$ref: "../events/order.order-payment-failed.v1.schema.json"}
+    InventoryConfirmationRequested:
+      name: order.inventory-confirmation-requested.v1
+      payload: {$ref: "../events/order.inventory-confirmation-requested.v1.schema.json"}
+    InventoryReleaseRequested:
+      name: order.inventory-release-requested.v1
+      payload: {$ref: "../events/order.inventory-release-requested.v1.schema.json"}
+    ManualReviewRequired:
+      name: order.manual-review-required.v1
+      payload: {$ref: "../events/order.manual-review-required.v1.schema.json"}
+    PaymentAuthorized:
+      name: payment.payment-authorized.v1
+      payload: {$ref: "../events/payment.payment-authorized.v1.schema.json"}
+    PaymentDeclined:
+      name: payment.payment-declined.v1
+      payload: {$ref: "../events/payment.payment-declined.v1.schema.json"}
+    PaymentFailed:
+      name: payment.payment-failed.v1
+      payload: {$ref: "../events/payment.payment-failed.v1.schema.json"}
+    PaymentUnknown:
+      name: payment.payment-unknown.v1
+      payload: {$ref: "../events/payment.payment-unknown.v1.schema.json"}
   schemas:
     EventEnvelope:
       $ref: "../events/event-envelope.v1.schema.json"

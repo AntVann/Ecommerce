@@ -70,3 +70,16 @@ service workload identity, and network policy are deferred to the cloud deployme
 | Negative stock during concurrent checkout | Inventory uses conditional updates, deterministic lock order, and database constraints |
 | Address or cart data leaks through telemetry | Structured logs contain identifiers and outcomes only; addresses, tokens, cookies, and item payloads are excluded |
 | Reservation outcome never arrives | Saga timeout and reservation expiry produce explicit cancellation or manual-review behavior and metrics |
+
+## Payment and Order Completion threats
+
+| Threat | Milestone 4 control |
+|---|---|
+| Real payment credentials enter the simulator | Strict `mf_fake_*` token allow-list; card-like values are rejected and no compliance claim is made |
+| Ambiguous timeout causes a second authorization | Payment remains `UNKNOWN`; reconciliation reuses the original provider idempotency key |
+| Duplicate or replayed callback repeats a transition | Signed callbacks, unique callback IDs, aggregate guards, and atomic inbox/outbox persistence |
+| Forged internal authorization | Constant-time service-key validation and customer/order ownership verification at Order |
+| Authorized stock expires or is released | Order confirms only after an idempotent Inventory commitment; contradictory facts enter manual review |
+| Declined payment leaves stock held | Release compensation precedes `PAYMENT_FAILED` and retries idempotently |
+| Customer or seller reads another order | Customer ownership and seller membership plus seller-line filtering are enforced in repository queries |
+| Payment token or provider payload leaks | Tokens are excluded from events, persistence outside Payment, responses, structured logs, traces, and metrics |

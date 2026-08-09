@@ -54,4 +54,32 @@ class InternalSellerControllerTest {
                 .extracting("code")
                 .isEqualTo("INTERNAL_AUTHENTICATION_401");
     }
+
+    @Test
+    void suspendedSellerRetainsHistoricalOrderReadButNotCommerceWrites() {
+        UUID sellerId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        var suspended =
+                new SellerRepository.SellerRecord(
+                        sellerId,
+                        userId,
+                        "Store",
+                        "Store LLC",
+                        "US",
+                        "SUSPENDED",
+                        4,
+                        Instant.EPOCH,
+                        Instant.EPOCH);
+        when(repository.findSeller(sellerId, false)).thenReturn(Optional.of(suspended));
+        when(repository.hasPermission(sellerId, userId, "ORDER_READ")).thenReturn(true);
+        var controller =
+                new InternalSellerController(
+                        repository,
+                        new SellerSecurityProperties("identity", "issuer", "audience", "secret"));
+
+        assertThat(controller.authorize(sellerId, userId, "ORDER_READ", "secret").authorized())
+                .isTrue();
+        assertThat(controller.authorize(sellerId, userId, "INVENTORY_WRITE", "secret").authorized())
+                .isFalse();
+    }
 }

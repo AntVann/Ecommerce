@@ -3,6 +3,8 @@ package com.marketflow.order.application;
 import com.marketflow.order.application.CheckoutModels.CheckoutCommand;
 import com.marketflow.order.application.CheckoutModels.OrderItem;
 import com.marketflow.order.application.CheckoutModels.OrderView;
+import com.marketflow.order.application.CheckoutModels.SellerOrderView;
+import com.marketflow.order.application.CheckoutModels.StatusHistory;
 import com.marketflow.order.domain.Address;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -161,6 +163,19 @@ public class OrderRepository {
                 .findFirst();
     }
 
+    public List<StatusHistory> statusHistory(UUID order) {
+        return jdbc.query(
+                "SELECT previous_status,new_status,reason,occurred_at FROM order_status_history WHERE order_id=? ORDER BY occurred_at,id",
+                (r, n) ->
+                        new StatusHistory(
+                                r.getString("previous_status"),
+                                r.getString("new_status"),
+                                r.getString("reason"),
+                                r.getObject("occurred_at", java.time.OffsetDateTime.class)
+                                        .toInstant()),
+                order);
+    }
+
     public Optional<OrderView> cartOrder(UUID customer, UUID cart, long version) {
         return jdbc
                 .query(
@@ -171,6 +186,125 @@ public class OrderRepository {
                         version)
                 .stream()
                 .findFirst();
+    }
+
+    public List<OrderView> customerOrders(
+            UUID customer, Instant beforeTime, UUID beforeId, int limit) {
+        if (beforeTime == null)
+            return jdbc.query(
+                    "SELECT * FROM customer_order WHERE customer_id=? ORDER BY created_at DESC,id DESC LIMIT ?",
+                    this::mapOrder,
+                    customer,
+                    limit);
+        return jdbc.query(
+                "SELECT * FROM customer_order WHERE customer_id=? AND (created_at,id)<(?,?) ORDER BY created_at DESC,id DESC LIMIT ?",
+                this::mapOrder,
+                customer,
+                db(beforeTime),
+                beforeId,
+                limit);
+    }
+
+    public List<SellerOrderView> sellerOrders(
+            UUID seller, Instant beforeTime, UUID beforeId, int limit) {
+        String base =
+                "SELECT o.* FROM customer_order o WHERE EXISTS (SELECT 1 FROM order_item i WHERE i.order_id=o.id AND i.seller_id=?) ";
+        if (beforeTime == null)
+            return jdbc.query(
+                    base + "ORDER BY o.created_at DESC,o.id DESC LIMIT ?",
+                    (r, n) -> mapSellerOrder(r, seller),
+                    seller,
+                    limit);
+        return jdbc.query(
+                base + "AND (o.created_at,o.id)<(?,?) ORDER BY o.created_at DESC,o.id DESC LIMIT ?",
+                (r, n) -> mapSellerOrder(r, seller),
+                seller,
+                db(beforeTime),
+                beforeId,
+                limit);
+    }
+
+    public Optional<SellerOrderView> sellerOrder(UUID seller, UUID order) {
+        return jdbc
+                .query(
+                        "SELECT o.* FROM customer_order o WHERE o.id=? AND EXISTS (SELECT 1 FROM order_item i WHERE i.order_id=o.id AND i.seller_id=?)",
+                        (r, n) -> mapSellerOrder(r, seller),
+                        order,
+                        seller)
+                .stream()
+                .findFirst();
+    }
+
+    public boolean claimPayment(UUID order, UUID customer, String key, String hash, Instant now) {
+        return jdbc.update(
+                        "INSERT INTO payment_initiation(order_id,customer_id,idempotency_key,request_hash,created_at) VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING",
+                        order,
+                        customer,
+                        key,
+                        hash,
+                        db(now))
+                == 1;
+    }
+
+    public Optional<PaymentInitiation> paymentInitiation(UUID order) {
+        return jdbc
+                .query(
+                        "SELECT customer_id,idempotency_key,request_hash FROM payment_initiation WHERE order_id=?",
+                        (r, n) ->
+                                new PaymentInitiation(
+                                        r.getObject(1, UUID.class), r.getString(2), r.getString(3)),
+                        order)
+                .stream()
+                .findFirst();
+    }
+
+    public void paymentState(UUID order, UUID payment, String state, Instant now) {
+        jdbc.update(
+                "UPDATE customer_order SET payment_id=COALESCE(payment_id,?),payment_state=?,payment_updated_at=?,updated_at=? WHERE id=?",
+                payment,
+                state,
+                db(now),
+                db(now),
+                order);
+    }
+
+    public boolean sagaState(
+            UUID order, List<String> from, String to, Instant deadline, Instant now) {
+        String placeholders = String.join(",", java.util.Collections.nCopies(from.size(), "?"));
+        var values = new java.util.ArrayList<Object>();
+        values.add(to);
+        values.add(db(deadline));
+        values.add(db(now));
+        values.add(order);
+        values.addAll(from);
+        return jdbc.update(
+                        "UPDATE order_saga SET state=?,deadline_at=?,version=version+1,updated_at=? WHERE order_id=? AND state IN ("
+                                + placeholders
+                                + ")",
+                        values.toArray())
+                == 1;
+    }
+
+    public List<UUID> stalePaymentUnknown(Instant now) {
+        return jdbc.query(
+                "SELECT order_id FROM order_saga WHERE state='PAYMENT_UNKNOWN' AND deadline_at<=? ORDER BY deadline_at LIMIT 50",
+                (r, n) -> r.getObject(1, UUID.class),
+                db(now));
+    }
+
+    public void stateOutbox(String type, OrderView order, String correlation, Instant now) {
+        outbox(
+                type,
+                order.id(),
+                order.version(),
+                correlation,
+                Map.of(
+                        "orderId", order.id(),
+                        "customerId", order.customerId(),
+                        "status", order.status(),
+                        "amount", order.grandTotal().toPlainString(),
+                        "currency", order.currency()),
+                now);
     }
 
     public void orderCreatedOutbox(OrderView order, long ttl, String correlation, Instant now) {
@@ -309,7 +443,27 @@ public class OrderRepository {
                 r.getLong("version"),
                 r.getObject("created_at", java.time.OffsetDateTime.class).toInstant(),
                 r.getObject("updated_at", java.time.OffsetDateTime.class).toInstant(),
-                items(id));
+                items(id),
+                r.getObject("payment_id", UUID.class),
+                r.getString("payment_state"));
+    }
+
+    private SellerOrderView mapSellerOrder(ResultSet r, UUID seller) throws SQLException {
+        UUID id = r.getObject("id", UUID.class);
+        List<OrderItem> sellerItems =
+                items(id).stream().filter(i -> i.sellerId().equals(seller)).toList();
+        BigDecimal subtotal =
+                sellerItems.stream()
+                        .map(OrderItem::lineSubtotal)
+                        .reduce(BigDecimal.ZERO.setScale(4), BigDecimal::add);
+        return new SellerOrderView(
+                id,
+                r.getString("status"),
+                r.getString("currency"),
+                subtotal,
+                r.getObject("created_at", java.time.OffsetDateTime.class).toInstant(),
+                r.getObject("updated_at", java.time.OffsetDateTime.class).toInstant(),
+                sellerItems);
     }
 
     private List<OrderItem> items(UUID order) {
@@ -355,4 +509,6 @@ public class OrderRepository {
     public record Idempotency(String requestHash, UUID orderId, Integer status) {}
 
     public record Saga(int expected, int reserved, String state) {}
+
+    public record PaymentInitiation(UUID customerId, String idempotencyKey, String requestHash) {}
 }

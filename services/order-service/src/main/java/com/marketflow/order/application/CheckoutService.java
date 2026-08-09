@@ -8,6 +8,7 @@ import com.marketflow.order.application.CheckoutModels.CatalogLine;
 import com.marketflow.order.application.CheckoutModels.CheckoutCommand;
 import com.marketflow.order.application.CheckoutModels.OrderItem;
 import com.marketflow.order.application.CheckoutModels.OrderView;
+import com.marketflow.order.application.CheckoutModels.StatusHistory;
 import com.marketflow.order.infrastructure.security.OrderProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
@@ -195,6 +196,12 @@ public class CheckoutService {
                                         HttpStatus.NOT_FOUND,
                                         "ORDER_NOT_FOUND_404",
                                         "Order was not found."));
+    }
+
+    @Transactional(readOnly = true)
+    public List<StatusHistory> history(UUID customer, UUID order) {
+        get(customer, order);
+        return repository.statusHistory(order);
     }
 
     private BigDecimal money(BigDecimal value) {

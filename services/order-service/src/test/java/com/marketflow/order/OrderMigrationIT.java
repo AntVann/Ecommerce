@@ -44,6 +44,20 @@ class OrderMigrationIT {
                                 "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('customer_order','order_item','order_saga','idempotency_record','outbox_event','processed_message')",
                                 Integer.class))
                 .isEqualTo(6);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='payment_initiation'",
+                                Integer.class))
+                .isOne();
+    }
+
+    @Test
+    void paymentSagaStatesAndPaymentMetadataAreSupported() {
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM information_schema.columns WHERE table_name='customer_order' AND column_name IN ('payment_id','payment_state','payment_updated_at')",
+                                Integer.class))
+                .isEqualTo(3);
     }
 
     @Test

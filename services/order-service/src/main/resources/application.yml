@@ -29,6 +29,10 @@ marketflow:
     inventory-base-url: ${INVENTORY_BASE_URL:http://localhost:8084}
     internal-service-key: ${IDENTITY_INTERNAL_SERVICE_KEY:local-development-only-change-me}
     reservation-ttl-seconds: ${ORDER_RESERVATION_TTL_SECONDS:900}
+    payment:
+      base-url: ${PAYMENT_BASE_URL:http://localhost:8088}
+      internal-service-key: ${PAYMENT_INTERNAL_SERVICE_KEY:local-payment-development-only-change-me}
+      unknown-timeout-seconds: ${ORDER_PAYMENT_UNKNOWN_TIMEOUT_SECONDS:900}
 management:
   endpoint.health:
     probes.enabled: true

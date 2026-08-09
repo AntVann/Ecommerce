@@ -27,6 +27,7 @@
         <module>services/search-service</module>
         <module>services/cart-service</module>
         <module>services/order-service</module>
+        <module>services/payment-service</module>
     </modules>
 
     <properties>
