@@ -4,16 +4,16 @@ MarketFlow is a multi-vendor e-commerce platform implemented as independently ow
 contexts. The authoritative product and engineering specification is
 [`docs/engineering-plan.md`](docs/engineering-plan.md).
 
-## Milestone 3 scope
+## Milestone 4 scope
 
-The current milestone adds expiring Redis carts and durable checkout/order orchestration to the
-Identity, Seller, Catalog, Inventory, and Search foundation. It provides guest and authenticated
-carts, deterministic cart merging, advisory price estimates, checkout revalidation, immutable
-order snapshots, idempotent order creation, and an initial inventory-reservation Saga.
+The current milestone adds a fake-token Payment bounded context and completes the initial Order
+Saga. It provides idempotent simulated authorization, approval, decline, timeout, delayed and
+duplicate callback behavior, Inventory confirmation or release compensation, customer order
+history, seller-filtered order views, and manual-review escalation for ambiguous inconsistencies.
 
 This remains an API-first backend. It does not contain a storefront, seller portal, or admin UI.
-Completed payment processing, final order confirmation, notification delivery, and fulfillment
-remain future milestones.
+It never accepts real payment credentials and makes no payment-compliance certification claim.
+Production payment providers, capture, fulfillment, and notification delivery remain future work.
 
 Foundation evidence is recorded in [`docs/milestones/m0-completion.md`](docs/milestones/m0-completion.md).
 Milestone 1 evidence is recorded in
@@ -22,6 +22,8 @@ Milestone 2 evidence is recorded in
 [`docs/milestones/milestone-02-completion.md`](docs/milestones/milestone-02-completion.md).
 Milestone 3 evidence is recorded in
 [`docs/milestones/milestone-03-completion.md`](docs/milestones/milestone-03-completion.md).
+Milestone 4 evidence is recorded in
+[`docs/milestones/milestone-04-completion.md`](docs/milestones/milestone-04-completion.md).
 
 ## Prerequisites
 
@@ -64,6 +66,7 @@ The Compose environment exposes these local-only endpoints:
 | Search service | http://localhost:8085/actuator/health/readiness |
 | Cart service | http://localhost:8086/actuator/health/readiness |
 | Order service | http://localhost:8087/actuator/health/readiness |
+| Payment service | http://localhost:8088/actuator/health/readiness |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 | RabbitMQ management | http://localhost:15672 |
@@ -87,4 +90,4 @@ scripts/        cross-platform development and validation entry points
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for branch, commit, quality, and security expectations.
 Operational details for this milestone are in
-[`docs/runbooks/cart-checkout-local.md`](docs/runbooks/cart-checkout-local.md).
+[`docs/runbooks/payment-order-local.md`](docs/runbooks/payment-order-local.md).
