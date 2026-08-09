@@ -100,6 +100,11 @@ bedb7bb feat(inventory): confirm and compensate order reservations
 529f0f9 feat(contracts): publish payment and completion events
 8975772 build(platform): run payment service locally
 53ca409 docs(milestone): document payment and order completion
+6b4371f fix(milestone): repair order wiring and payment image build
+d552ec9 docs(milestone): add payment completion report
+6505e67 fix(platform): include payment module in service builds
+a03d25a fix(order): allow payment consumer transaction proxy
+5a2c927 fix(security): retain CSRF protection on payment service
 ```
 
 Base: `origin/main`
@@ -116,9 +121,9 @@ Branch: `milestone/04-payment-orders`
 - [x] Migrations, contracts, events, outbox/inbox, observability, and documentation implemented.
 - [x] Maven quality verification passes with Docker-dependent integration tests skipped locally.
 - [x] No real credentials, payment-provider integration, fulfillment, or notification delivery included.
-- [ ] Docker/Testcontainers and GitHub CI checks pass.
-- [ ] Branch pushed and pull request opened.
+- [x] Docker/Testcontainers and GitHub CI checks pass (remote Compose, Java, contract, security, and dependency checks; PR #19).
+- [x] Branch pushed and pull request opened: https://github.com/AntVann/Ecommerce/pull/19.
 
 ## Final Status
 
-IMPLEMENTED - AWAITING REMOTE CI AND REVIEW
+IMPLEMENTED - REMOTE VALIDATION PASSED - PR OPEN FOR REVIEW
