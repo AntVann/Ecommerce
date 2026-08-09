@@ -15,7 +15,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
-public final class PaymentEventConsumer {
+public class PaymentEventConsumer {
     static final String CONSUMER = "order-payment-v1";
     private final OrderRepository repository;
     private final OrderSagaGateways gateways;
