@@ -15,6 +15,10 @@ This remains an API-first backend. It does not contain a storefront, seller port
 It never accepts real payment credentials and makes no payment-compliance certification claim.
 Production payment providers, capture, fulfillment, and notification delivery remain future work.
 
+Milestone 6 adds a free/local Kubernetes and Helm deployment profile. It does not provision paid
+managed cloud infrastructure; dependency endpoints and secrets are supplied out-of-band for a
+local or free-tier demonstration.
+
 Foundation evidence is recorded in [`docs/milestones/m0-completion.md`](docs/milestones/m0-completion.md).
 Milestone 1 evidence is recorded in
 [`docs/milestones/milestone-01-completion.md`](docs/milestones/milestone-01-completion.md).
