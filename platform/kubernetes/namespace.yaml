@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: marketflow-local
+  labels:
+    app.kubernetes.io/part-of: marketflow
+    marketflow.io/environment: local

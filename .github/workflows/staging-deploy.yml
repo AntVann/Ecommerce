@@ -1,0 +1,54 @@
+name: MarketFlow Staging Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Immutable image tag or digest to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy staging and smoke test
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.4
+      - name: Configure cluster access
+        env:
+          KUBECONFIG_B64: ${{ secrets.STAGING_KUBECONFIG_B64 }}
+        run: |
+          test -n "$KUBECONFIG_B64"
+          echo "$KUBECONFIG_B64" | base64 --decode > "$RUNNER_TEMP/kubeconfig"
+          echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> "$GITHUB_ENV"
+      - name: Render and lint chart
+        run: |
+          helm lint platform/helm/marketflow
+          helm template marketflow platform/helm/marketflow \
+            -f platform/helm/marketflow/values-staging.example.yaml \
+            --set imageTag='${{ inputs.image_tag }}' > "$RUNNER_TEMP/marketflow.yaml"
+      - name: Record rollback revision
+        run: |
+          previous=$(helm history marketflow --namespace marketflow-staging --max 2 -o json 2>/dev/null | jq -r '.[-2].revision // 0' || true)
+          echo "PREVIOUS_REVISION=${previous:-0}" >> "$GITHUB_ENV"
+      - name: Deploy with wait gate
+        run: |
+          helm upgrade --install marketflow platform/helm/marketflow \
+            --namespace marketflow-staging --create-namespace \
+            -f platform/helm/marketflow/values-staging.example.yaml \
+            --set imageTag='${{ inputs.image_tag }}' --wait --timeout 10m
+      - name: Run smoke checks
+        run: bash scripts/smoke-kubernetes.sh
+      - name: Roll back failed release
+        if: failure() && env.PREVIOUS_REVISION != '0'
+        run: helm rollback marketflow "$PREVIOUS_REVISION" --namespace marketflow-staging --wait --timeout 10m

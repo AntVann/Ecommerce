@@ -1,0 +1,19 @@
+# Copy and edit out-of-band for a staging cluster. Do not commit credentials or certificates.
+environment: staging
+namespace: marketflow-staging
+imageRegistry: ghcr.io/antvann/marketflow
+imagePullPolicy: IfNotPresent
+imageTag: sha256:REPLACE_WITH_RELEASE_DIGEST
+replicaCount: 2
+tls:
+  enabled: true
+  secretName: marketflow-staging-tls
+  host: marketflow.example.invalid
+external:
+  postgresHost: REPLACE_WITH_PRIVATE_POSTGRES_ENDPOINT
+  kafkaBootstrapServers: REPLACE_WITH_TLS_KAFKA_ENDPOINT
+  rabbitmqAddresses: REPLACE_WITH_TLS_RABBIT_ENDPOINT
+  redisHost: REPLACE_WITH_TLS_REDIS_ENDPOINT
+  opensearchUrl: https://REPLACE_WITH_PRIVATE_OPENSEARCH_ENDPOINT
+  objectStorageEndpoint: https://REPLACE_WITH_PRIVATE_OBJECT_STORAGE_ENDPOINT
+  otlpEndpoint: https://REPLACE_WITH_OTEL_COLLECTOR_ENDPOINT

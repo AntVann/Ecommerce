@@ -1,0 +1,38 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: marketflow-platform-alerts
+  namespace: marketflow-local
+  labels: {app.kubernetes.io/part-of: marketflow}
+spec:
+  groups:
+    - name: marketflow.kubernetes
+      rules:
+        - alert: MarketFlowDeploymentUnavailable
+          expr: kube_deployment_status_replicas_available{namespace=~"marketflow-.*"} < kube_deployment_spec_replicas{namespace=~"marketflow-.*"}
+          for: 5m
+          labels: {severity: critical}
+          annotations:
+            summary: MarketFlow deployment has unavailable replicas
+            runbook: docs/runbooks/cloud-rollback.md
+        - alert: MarketFlowPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace=~"marketflow-.*"}[15m]) > 3
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: MarketFlow pod is restarting repeatedly
+            runbook: docs/runbooks/local-kubernetes-deployment.md
+        - alert: MarketFlowOutboxBacklog
+          expr: max by (application) (marketflow_outbox_pending_total) > 100
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: MarketFlow outbox backlog is growing
+            runbook: docs/runbooks/payment-order-local.md
+        - alert: MarketFlowNotificationDeadLetterQueue
+          expr: marketflow_notification_dlq_messages > 0
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: Notification messages are in the dead-letter queue
+            runbook: docs/runbooks/notification-fulfillment-local.md

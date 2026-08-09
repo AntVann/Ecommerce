@@ -1,0 +1,13 @@
+# Free profile: one replica, local image names, and out-of-band dependency endpoints.
+environment: free-local
+namespace: marketflow-local
+imageRegistry: marketflow
+imageTag: local
+replicaCount: 1
+resources:
+  requests: {cpu: 50m, memory: 192Mi}
+  limits: {cpu: 500m, memory: 512Mi}
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 2

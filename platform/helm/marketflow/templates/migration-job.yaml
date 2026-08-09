@@ -1,0 +1,26 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "marketflow.fullname" . }}-migrations
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    metadata: {labels: {app.kubernetes.io/name: marketflow-migrations}}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: migration-runner
+          image: {{ .Values.imageRegistry }}/identity-service:{{ .Values.imageTag }}
+          command: ["/bin/sh", "-c"]
+          args: ["echo 'Run service-owned Flyway migrations using a reviewed per-service job'; exit 1"]
+          envFrom:
+            - configMapRef: {name: {{ include "marketflow.fullname" . }}-runtime}
+            - secretRef: {name: {{ .Values.secretName }}, optional: false}
+          securityContext: {runAsNonRoot: true, allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+{{- end }}

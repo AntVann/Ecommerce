@@ -1,0 +1,54 @@
+environment: local-kubernetes
+namespace: marketflow-local
+createNamespace: false
+imageRegistry: marketflow
+imagePullPolicy: IfNotPresent
+imageTag: local
+replicaCount: 1
+serviceAccount:
+  name: marketflow-service
+  automountToken: false
+secretName: marketflow-runtime-secrets
+tls:
+  enabled: true
+  secretName: marketflow-local-tls
+  host: marketflow.local
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+migrations:
+  enabled: false
+pdb:
+  enabled: true
+  minAvailable: 1
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+  limits: {cpu: 500m, memory: 512Mi}
+external:
+  postgresHost: postgres
+  kafkaBootstrapServers: kafka:9092
+  rabbitmqAddresses: rabbitmq:5672
+  redisHost: redis
+  opensearchUrl: http://opensearch:9200
+  objectStorageEndpoint: http://object-storage:8333
+  otlpEndpoint: http://otel-collector:4318
+services:
+  sample-service: {port: 8080, path: /actuator/health, pdb: false, hpa: false}
+  identity-service: {port: 8081, pdb: true, hpa: true}
+  seller-service: {port: 8082, pdb: false, hpa: false}
+  catalog-service: {port: 8083, pdb: false, hpa: false}
+  inventory-service: {port: 8084, pdb: true, hpa: false}
+  search-service: {port: 8085, pdb: false, hpa: false}
+  cart-service: {port: 8086, pdb: false, hpa: false}
+  order-service: {port: 8087, pdb: true, hpa: true}
+  payment-service: {port: 8088, pdb: true, hpa: false}
+  notification-service: {port: 8089, pdb: false, hpa: true}

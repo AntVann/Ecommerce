@@ -1,0 +1,20 @@
+{{- if .Values.autoscaling.enabled }}
+{{- range $name, $service := .Values.services }}
+{{- if $service.hpa }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    {{- include "marketflow.labels" $ | nindent 4 }}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: {{ $name }}}
+  minReplicas: {{ $.Values.autoscaling.minReplicas }}
+  maxReplicas: {{ $.Values.autoscaling.maxReplicas }}
+  behavior: {scaleDown: {stabilizationWindowSeconds: 300}}
+  metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: {{ $.Values.autoscaling.targetCPUUtilizationPercentage }}}}}]
+{{- end }}
+{{- end }}
+{{- end }}

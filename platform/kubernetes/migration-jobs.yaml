@@ -1,0 +1,23 @@
+# Migration execution is opt-in. Service-owned Flyway migrations run before rollout in a
+# dedicated Job in staging; local developers can keep Flyway startup migration enabled.
+# The image and command are intentionally placeholders so no job can mutate a real database
+# when this directory is rendered without explicit image and secret configuration.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: marketflow-migrations-example
+  namespace: marketflow-local
+  labels: {app.kubernetes.io/part-of: marketflow, marketflow.io/disabled-by-default: "true"}
+spec:
+  suspend: true
+  template:
+    metadata: {labels: {app.kubernetes.io/name: marketflow-migrations-example}}
+    spec:
+      serviceAccountName: marketflow-service
+      restartPolicy: Never
+      containers:
+        - name: migration-runner
+          image: marketflow/identity-service:local
+          command: ["/bin/sh", "-c"]
+          args: ["echo 'Enable a service-owned Flyway migration Job only after reviewing target databases'; exit 1"]
+          securityContext: {runAsNonRoot: true, allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
