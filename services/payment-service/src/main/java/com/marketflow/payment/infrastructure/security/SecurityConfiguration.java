@@ -14,7 +14,7 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain security(HttpSecurity http, PaymentSecurityProperties properties)
             throws Exception {
-        return http.csrf(csrf -> csrf.disable())
+        return http.csrf(csrf -> csrf.ignoringRequestMatchers("/internal/v1/**"))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(
                         new InternalServiceKeyFilter(properties.internalServiceKey()),
