@@ -5,6 +5,10 @@ import com.marketflow.order.application.CheckoutModels.OrderItem;
 import com.marketflow.order.application.CheckoutModels.OrderView;
 import com.marketflow.order.application.CheckoutModels.SellerOrderView;
 import com.marketflow.order.application.CheckoutModels.StatusHistory;
+import com.marketflow.order.application.FulfillmentModels.CreateShipmentCommand;
+import com.marketflow.order.application.FulfillmentModels.ShipmentLineRequest;
+import com.marketflow.order.application.FulfillmentModels.ShipmentLineView;
+import com.marketflow.order.application.FulfillmentModels.ShipmentView;
 import com.marketflow.order.domain.Address;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -235,6 +239,284 @@ public class OrderRepository {
                 .findFirst();
     }
 
+    public Optional<ShipmentView> shipment(UUID shipment) {
+        return jdbc.query("SELECT * FROM shipment WHERE id=?", this::mapShipment, shipment).stream()
+                .findFirst();
+    }
+
+    public List<ShipmentView> customerShipments(UUID customer, UUID order) {
+        return jdbc.query(
+                "SELECT s.* FROM shipment s JOIN customer_order o ON o.id=s.order_id WHERE s.order_id=? AND o.customer_id=? ORDER BY s.created_at,s.id",
+                this::mapShipment,
+                order,
+                customer);
+    }
+
+    public List<ShipmentView> sellerShipments(UUID seller, UUID order) {
+        return jdbc.query(
+                "SELECT * FROM shipment WHERE seller_id=? AND order_id=? ORDER BY created_at,id",
+                this::mapShipment,
+                seller,
+                order);
+    }
+
+    public Optional<ShipmentView> idempotentShipment(UUID seller, String key) {
+        return jdbc
+                .query(
+                        "SELECT shipment_id FROM shipment_idempotency WHERE seller_id=? AND idempotency_key=?",
+                        (r, n) -> r.getObject(1, UUID.class),
+                        seller,
+                        key)
+                .stream()
+                .findFirst()
+                .flatMap(this::shipment);
+    }
+
+    public Optional<String> idempotencyHash(UUID seller, String key) {
+        return jdbc
+                .query(
+                        "SELECT request_hash FROM shipment_idempotency WHERE seller_id=? AND idempotency_key=?",
+                        (r, n) -> r.getString(1),
+                        seller,
+                        key)
+                .stream()
+                .findFirst();
+    }
+
+    public boolean claimShipment(UUID seller, String key, String hash, Instant now) {
+        return jdbc.update(
+                        "INSERT INTO shipment_idempotency(seller_id,idempotency_key,request_hash,created_at) VALUES (?,?,?,?) ON CONFLICT DO NOTHING",
+                        seller,
+                        key,
+                        hash,
+                        db(now))
+                == 1;
+    }
+
+    public void createShipment(
+            CreateShipmentCommand command, UUID shipment, String correlation, Instant now) {
+        jdbc.queryForObject(
+                "SELECT id FROM customer_order WHERE id=? FOR UPDATE",
+                UUID.class,
+                command.orderId());
+        String oldStatus =
+                jdbc.queryForObject(
+                        "SELECT status FROM customer_order WHERE id=?",
+                        String.class,
+                        command.orderId());
+        if (!"CONFIRMED".equals(oldStatus) && !"FULFILLING".equals(oldStatus))
+            throw new com.marketflow.order.api.ApiException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "ORDER_NOT_FULFILLABLE_409",
+                    "Only confirmed orders can be fulfilled.");
+        String placeholders =
+                String.join(",", java.util.Collections.nCopies(command.lines().size(), "?"));
+        var itemArgs = new java.util.ArrayList<Object>();
+        itemArgs.add(command.orderId());
+        itemArgs.add(command.sellerId());
+        itemArgs.addAll(command.lines().stream().map(ShipmentLineRequest::orderItemId).toList());
+        List<ItemLock> items =
+                jdbc.query(
+                        "SELECT id,variant_id,quantity,fulfilled_quantity FROM order_item WHERE order_id=? AND seller_id=? AND id IN ("
+                                + placeholders
+                                + ") FOR UPDATE",
+                        (r, n) ->
+                                new ItemLock(
+                                        r.getObject(1, UUID.class),
+                                        r.getObject(2, UUID.class),
+                                        r.getInt(3),
+                                        r.getInt(4)),
+                        itemArgs.toArray());
+        if (items.size() != command.lines().size())
+            throw new com.marketflow.order.api.ApiException(
+                    org.springframework.http.HttpStatus.NOT_FOUND,
+                    "ORDER_LINE_NOT_FOUND_404",
+                    "One or more order lines were not found.");
+        Map<UUID, ItemLock> byId =
+                items.stream().collect(java.util.stream.Collectors.toMap(ItemLock::id, x -> x));
+        for (ShipmentLineRequest line : command.lines()) {
+            ItemLock item = byId.get(line.orderItemId());
+            if (line.quantity() < 1 || item.fulfilled() + line.quantity() > item.quantity())
+                throw new com.marketflow.order.api.ApiException(
+                        org.springframework.http.HttpStatus.CONFLICT,
+                        "SHIPMENT_QUANTITY_CONFLICT_409",
+                        "Shipment quantity exceeds the unfulfilled quantity.");
+        }
+        jdbc.update(
+                "INSERT INTO shipment(id,order_id,seller_id,status,carrier,tracking_number,created_at,updated_at) VALUES (?,?,?,'CREATED',?,?,?,?)",
+                shipment,
+                command.orderId(),
+                command.sellerId(),
+                command.carrier(),
+                command.trackingNumber(),
+                db(now),
+                db(now));
+        for (ShipmentLineRequest line : command.lines()) {
+            ItemLock item = byId.get(line.orderItemId());
+            jdbc.update(
+                    "INSERT INTO shipment_line(shipment_id,order_item_id,quantity) VALUES (?,?,?)",
+                    shipment,
+                    line.orderItemId(),
+                    line.quantity());
+            jdbc.update(
+                    "UPDATE order_item SET fulfilled_quantity=fulfilled_quantity+? WHERE id=?",
+                    line.quantity(),
+                    item.id());
+        }
+        String next = oldStatus;
+        if ("CONFIRMED".equals(oldStatus)) next = "FULFILLING";
+        Integer remaining =
+                jdbc.queryForObject(
+                        "SELECT count(*) FROM order_item WHERE order_id=? AND fulfilled_quantity < quantity",
+                        Integer.class,
+                        command.orderId());
+        if (remaining != null && remaining == 0) next = "SHIPPED";
+        if (!next.equals(oldStatus)) {
+            jdbc.update(
+                    "UPDATE customer_order SET status=?,version=version+1,updated_at=? WHERE id=?",
+                    next,
+                    db(now),
+                    command.orderId());
+            jdbc.update(
+                    "UPDATE order_saga SET state=?,version=version+1,updated_at=? WHERE order_id=?",
+                    next,
+                    db(now),
+                    command.orderId());
+            history(command.orderId(), oldStatus, next, "SHIPMENT_CREATED", correlation, now);
+        }
+        outboxShipment("order.shipment-created.v1", shipment, command, correlation, now);
+        if ("SHIPPED".equals(next)) outboxOrderShipped(command.orderId(), correlation, now);
+    }
+
+    public void bindShipmentId(UUID seller, String key, UUID shipment) {
+        jdbc.update(
+                "UPDATE shipment_idempotency SET shipment_id=? WHERE seller_id=? AND idempotency_key=?",
+                shipment,
+                seller,
+                key);
+    }
+
+    public boolean transitionShipment(
+            UUID seller, UUID shipment, String from, String to, String correlation, Instant now) {
+        int updated =
+                jdbc.update(
+                        "UPDATE shipment SET status=?,version=version+1,updated_at=? WHERE id=? AND seller_id=? AND status=?",
+                        to,
+                        db(now),
+                        shipment,
+                        seller,
+                        from);
+        if (updated == 1)
+            jdbc.update(
+                    "INSERT INTO shipment_status_history(id,shipment_id,previous_status,new_status,correlation_id,occurred_at) VALUES (?,?,?,?,?,?)",
+                    UUID.randomUUID(),
+                    shipment,
+                    from,
+                    to,
+                    correlation,
+                    db(now));
+        return updated == 1;
+    }
+
+    private void outboxShipment(
+            String type,
+            UUID shipment,
+            CreateShipmentCommand command,
+            String correlation,
+            Instant now) {
+        UUID customer =
+                jdbc.queryForObject(
+                        "SELECT customer_id FROM customer_order WHERE id=?",
+                        UUID.class,
+                        command.orderId());
+        List<Map<String, Object>> lines =
+                command.lines().stream()
+                        .map(
+                                line ->
+                                        Map.<String, Object>of(
+                                                "orderItemId", line.orderItemId(),
+                                                "variantId",
+                                                        jdbc.queryForObject(
+                                                                "SELECT variant_id FROM order_item WHERE id=?",
+                                                                UUID.class,
+                                                                line.orderItemId()),
+                                                "quantity", line.quantity()))
+                        .toList();
+        Map<String, Object> data =
+                Map.of(
+                        "shipmentId",
+                        shipment,
+                        "orderId",
+                        command.orderId(),
+                        "customerId",
+                        customer,
+                        "sellerId",
+                        command.sellerId(),
+                        "status",
+                        "CREATED",
+                        "carrier",
+                        command.carrier(),
+                        "trackingNumber",
+                        command.trackingNumber(),
+                        "lines",
+                        lines);
+        outbox(type, "Shipment", shipment, 1, correlation, data, now);
+    }
+
+    private void outboxOrderShipped(UUID order, String correlation, Instant now) {
+        UUID customer =
+                jdbc.queryForObject(
+                        "SELECT customer_id FROM customer_order WHERE id=?", UUID.class, order);
+        List<UUID> shipments =
+                jdbc.query(
+                        "SELECT id FROM shipment WHERE order_id=?",
+                        (r, n) -> r.getObject(1, UUID.class),
+                        order);
+        outbox(
+                "order.order-shipped.v1",
+                "Order",
+                order,
+                jdbc.queryForObject(
+                        "SELECT version FROM customer_order WHERE id=?", Long.class, order),
+                correlation,
+                Map.of(
+                        "orderId",
+                        order,
+                        "customerId",
+                        customer,
+                        "status",
+                        "SHIPPED",
+                        "shipmentIds",
+                        shipments),
+                now);
+    }
+
+    private ShipmentView mapShipment(ResultSet r, int row) throws SQLException {
+        UUID id = r.getObject("id", UUID.class);
+        List<ShipmentLineView> lines =
+                jdbc.query(
+                        "SELECT sl.order_item_id,oi.variant_id,sl.quantity FROM shipment_line sl JOIN order_item oi ON oi.id=sl.order_item_id WHERE sl.shipment_id=? ORDER BY sl.order_item_id",
+                        (x, n) ->
+                                new ShipmentLineView(
+                                        x.getObject(1, UUID.class),
+                                        x.getObject(2, UUID.class),
+                                        x.getInt(3)),
+                        id);
+        return new ShipmentView(
+                id,
+                r.getObject("order_id", UUID.class),
+                r.getObject("seller_id", UUID.class),
+                r.getString("status"),
+                r.getString("carrier"),
+                r.getString("tracking_number"),
+                r.getLong("version"),
+                r.getObject("created_at", java.time.OffsetDateTime.class).toInstant(),
+                r.getObject("updated_at", java.time.OffsetDateTime.class).toInstant(),
+                lines);
+    }
+
+    private record ItemLock(UUID id, UUID variant, int quantity, int fulfilled) {}
+
     public boolean claimPayment(UUID order, UUID customer, String key, String hash, Instant now) {
         return jdbc.update(
                         "INSERT INTO payment_initiation(order_id,customer_id,idempotency_key,request_hash,created_at) VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING",
@@ -334,12 +616,23 @@ public class OrderRepository {
             String correlation,
             Map<String, Object> data,
             Instant now) {
+        outbox(type, "Order", id, version, correlation, data, now);
+    }
+
+    private void outbox(
+            String type,
+            String aggregateType,
+            UUID id,
+            long version,
+            String correlation,
+            Map<String, Object> data,
+            Instant now) {
         UUID event = UUID.randomUUID();
         Map<String, Object> envelope =
                 Map.ofEntries(
                         Map.entry("eventId", event),
                         Map.entry("eventType", type),
-                        Map.entry("aggregateType", "Order"),
+                        Map.entry("aggregateType", aggregateType),
                         Map.entry("aggregateId", id),
                         Map.entry("aggregateVersion", version),
                         Map.entry("occurredAt", now),
@@ -348,9 +641,10 @@ public class OrderRepository {
                         Map.entry("schemaVersion", 1),
                         Map.entry("data", data));
         jdbc.update(
-                "INSERT INTO outbox_event(event_id,event_type,aggregate_type,aggregate_id,aggregate_version,correlation_id,payload,occurred_at,next_attempt_at) VALUES (?,?,'Order',?,?,?,CAST(? AS jsonb),?,?)",
+                "INSERT INTO outbox_event(event_id,event_type,aggregate_type,aggregate_id,aggregate_version,correlation_id,payload,occurred_at,next_attempt_at) VALUES (?,?,?,?,?,?,CAST(? AS jsonb),?,?)",
                 event,
                 type,
+                aggregateType,
                 id,
                 version,
                 correlation,
@@ -445,7 +739,8 @@ public class OrderRepository {
                 r.getObject("updated_at", java.time.OffsetDateTime.class).toInstant(),
                 items(id),
                 r.getObject("payment_id", UUID.class),
-                r.getString("payment_state"));
+                r.getString("payment_state"),
+                shipments(id));
     }
 
     private SellerOrderView mapSellerOrder(ResultSet r, UUID seller) throws SQLException {
@@ -483,6 +778,13 @@ public class OrderRepository {
                                 r.getString("currency"),
                                 r.getBigDecimal("line_subtotal"),
                                 r.getLong("catalog_version")),
+                order);
+    }
+
+    private List<ShipmentView> shipments(UUID order) {
+        return jdbc.query(
+                "SELECT * FROM shipment WHERE order_id=? ORDER BY created_at,id",
+                this::mapShipment,
                 order);
     }
 

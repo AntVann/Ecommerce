@@ -127,6 +127,21 @@ services:
       retries: 20
     restart: unless-stopped
 
+  notification-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: marketflow_notification
+      POSTGRES_USER: ${NOTIFICATION_DATABASE_USER:-notification_app}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DATABASE_PASSWORD:-local-development-only}
+    ports: ["5440:5432"]
+    volumes: [notification-postgres-data:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
   kafka:
     image: apache/kafka:4.3.1
     environment:
@@ -553,6 +568,38 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    environment:
+      MARKETFLOW_ENVIRONMENT: local
+      SERVER_PORT: 8089
+      NOTIFICATION_DATABASE_URL: jdbc:postgresql://notification-postgres:5432/marketflow_notification
+      NOTIFICATION_DATABASE_USER: ${NOTIFICATION_DATABASE_USER:-notification_app}
+      NOTIFICATION_DATABASE_PASSWORD: ${NOTIFICATION_DATABASE_PASSWORD:-local-development-only}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${MARKETFLOW_RABBITMQ_USER:-marketflow_local}
+      RABBITMQ_PASSWORD: ${MARKETFLOW_RABBITMQ_PASSWORD:-local-development-only}
+      RABBITMQ_VHOST: /marketflow
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+    ports: ["8089:8089"]
+    depends_on:
+      notification-postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      kafka-init: {condition: service_completed_successfully}
+      otel-collector: {condition: service_started}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8089/actuator/health/readiness | grep -q '\"status\":\"UP\"'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v3.13.1
     command:
@@ -582,6 +629,8 @@ services:
       order-service:
         condition: service_healthy
       payment-service:
+        condition: service_healthy
+      notification-service:
         condition: service_healthy
     restart: unless-stopped
 
@@ -620,6 +669,7 @@ volumes:
   search-postgres-data:
   order-postgres-data:
   payment-postgres-data:
+  notification-postgres-data:
   kafka-data:
   rabbitmq-data:
   redis-data:

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketflow.dev/schemas/events/order.order-shipped.v1.schema.json",
+  "allOf": [
+    {"$ref": "event-envelope.v1.schema.json"},
+    {"type": "object", "properties": {
+      "eventType": {"const": "order.order-shipped.v1"},
+      "aggregateType": {"const": "Order"},
+      "producer": {"const": "order-service"},
+      "data": {"$ref": "#/$defs/data"}
+    }}
+  ],
+  "$defs": {
+    "data": {
+      "type": "object",
+      "required": ["orderId", "customerId", "status", "shipmentIds"],
+      "properties": {
+        "orderId": {"type": "string", "format": "uuid"},
+        "customerId": {"type": "string", "format": "uuid"},
+        "status": {"const": "SHIPPED"},
+        "shipmentIds": {
+          "type": "array", "minItems": 1, "maxItems": 100,
+          "items": {"type": "string", "format": "uuid"}
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

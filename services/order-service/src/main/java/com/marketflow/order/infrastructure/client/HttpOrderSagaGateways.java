@@ -67,15 +67,27 @@ public final class HttpOrderSagaGateways implements OrderSagaGateways {
 
     @Override
     public void requireSellerPermission(UUID sellerId, UUID userId) {
+        requirePermission(sellerId, userId, "ORDER_READ", "Seller authorization is unavailable.");
+    }
+
+    @Override
+    public void requireFulfillmentPermission(UUID sellerId, UUID userId) {
+        requirePermission(
+                sellerId, userId, "FULFILLMENT_WRITE", "Seller authorization is unavailable.");
+    }
+
+    private void requirePermission(
+            UUID sellerId, UUID userId, String permission, String unavailableMessage) {
         try {
             Authorization response =
                     clients.baseUrl(order.sellerBaseUrl())
                             .build()
                             .get()
                             .uri(
-                                    "/internal/v1/sellers/{sellerId}/authorization?userId={userId}&permission=ORDER_READ",
+                                    "/internal/v1/sellers/{sellerId}/authorization?userId={userId}&permission={permission}",
                                     sellerId,
-                                    userId)
+                                    userId,
+                                    permission)
                             .header("X-Internal-Service-Key", order.internalServiceKey())
                             .retrieve()
                             .body(Authorization.class);
@@ -87,7 +99,7 @@ public final class HttpOrderSagaGateways implements OrderSagaGateways {
         } catch (ApiException e) {
             throw e;
         } catch (RuntimeException e) {
-            unavailable("Seller authorization is unavailable.");
+            unavailable(unavailableMessage);
         }
     }
 

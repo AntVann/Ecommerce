@@ -17,4 +17,6 @@ public interface OrderSagaGateways {
     void releaseInventory(UUID orderId);
 
     void requireSellerPermission(UUID sellerId, UUID userId);
+
+    void requireFulfillmentPermission(UUID sellerId, UUID userId);
 }

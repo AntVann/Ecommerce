@@ -3,7 +3,7 @@ info:
   title: MarketFlow Event Contracts
   version: 1.0.0
   description: >-
-    Versioned Identity, Seller, Catalog, Inventory, Order, and Payment events using the shared MarketFlow envelope.
+    Versioned Identity, Seller, Catalog, Inventory, Order, Payment, and Notification contracts using the shared MarketFlow envelope.
 defaultContentType: application/json
 channels:
   identityEvents:
@@ -42,6 +42,8 @@ channels:
       inventoryConfirmationRequested: {$ref: "#/components/messages/InventoryConfirmationRequested"}
       inventoryReleaseRequested: {$ref: "#/components/messages/InventoryReleaseRequested"}
       manualReviewRequired: {$ref: "#/components/messages/ManualReviewRequired"}
+      shipmentCreated: {$ref: "#/components/messages/ShipmentCreated"}
+      orderShipped: {$ref: "#/components/messages/OrderShipped"}
   paymentEvents:
     address: marketflow.payment.events.v1
     messages:
@@ -49,6 +51,17 @@ channels:
       paymentDeclined: {$ref: "#/components/messages/PaymentDeclined"}
       paymentFailed: {$ref: "#/components/messages/PaymentFailed"}
       paymentUnknown: {$ref: "#/components/messages/PaymentUnknown"}
+  notificationCommands:
+    address: marketflow.notification.commands.v1
+    bindings:
+      amqp:
+        exchange:
+          name: marketflow.notification.commands.v1
+          type: topic
+          durable: true
+    messages:
+      sendOrderConfirmation: {$ref: "#/components/messages/SendOrderConfirmation"}
+      sendShipmentNotification: {$ref: "#/components/messages/SendShipmentNotification"}
 operations:
   publishIdentityEvents:
     action: send
@@ -68,6 +81,9 @@ operations:
   publishPaymentEvents:
     action: send
     channel: {$ref: "#/channels/paymentEvents"}
+  publishNotificationCommands:
+    action: send
+    channel: {$ref: "#/channels/notificationCommands"}
   inventoryConsumesOrderEvents:
     action: receive
     channel: {$ref: "#/channels/orderEvents"}
@@ -77,6 +93,9 @@ operations:
   orderConsumesPaymentEvents:
     action: receive
     channel: {$ref: "#/channels/paymentEvents"}
+  notificationConsumesOrderEvents:
+    action: receive
+    channel: {$ref: "#/channels/orderEvents"}
 components:
   messages:
     UserRegistered:
@@ -142,6 +161,12 @@ components:
     ManualReviewRequired:
       name: order.manual-review-required.v1
       payload: {$ref: "../events/order.manual-review-required.v1.schema.json"}
+    ShipmentCreated:
+      name: order.shipment-created.v1
+      payload: {$ref: "../events/order.shipment-created.v1.schema.json"}
+    OrderShipped:
+      name: order.order-shipped.v1
+      payload: {$ref: "../events/order.order-shipped.v1.schema.json"}
     PaymentAuthorized:
       name: payment.payment-authorized.v1
       payload: {$ref: "../events/payment.payment-authorized.v1.schema.json"}
@@ -154,6 +179,12 @@ components:
     PaymentUnknown:
       name: payment.payment-unknown.v1
       payload: {$ref: "../events/payment.payment-unknown.v1.schema.json"}
+    SendOrderConfirmation:
+      name: notification.send-order-confirmation.v1
+      payload: {$ref: "../messages/notification.send-order-confirmation.v1.schema.json"}
+    SendShipmentNotification:
+      name: notification.send-shipment-notification.v1
+      payload: {$ref: "../messages/notification.send-shipment-notification.v1.schema.json"}
   schemas:
     EventEnvelope:
       $ref: "../events/event-envelope.v1.schema.json"
