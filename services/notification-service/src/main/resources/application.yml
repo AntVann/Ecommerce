@@ -1,0 +1,40 @@
+spring:
+  application.name: marketflow-notification-service
+  datasource:
+    url: ${NOTIFICATION_DATABASE_URL:jdbc:postgresql://localhost:5440/marketflow_notification}
+    username: ${NOTIFICATION_DATABASE_USER:notification_app}
+    password: ${NOTIFICATION_DATABASE_PASSWORD:local-development-only}
+  flyway.enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      group-id: notification-order-events-v1
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  rabbitmq:
+    addresses: ${RABBITMQ_ADDRESSES:${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
+    username: ${RABBITMQ_USERNAME:marketflow}
+    password: ${RABBITMQ_PASSWORD:local-development-only}
+    virtual-host: ${RABBITMQ_VHOST:/}
+server:
+  port: ${SERVER_PORT:8089}
+  shutdown: graceful
+marketflow:
+  notification:
+    fake-email:
+      scenario: ${FAKE_EMAIL_SCENARIO:success}
+      transient-failures: ${FAKE_EMAIL_TRANSIENT_FAILURES:2}
+    retry:
+      max-attempts: ${NOTIFICATION_MAX_ATTEMPTS:5}
+      base-delay: ${NOTIFICATION_RETRY_BASE_DELAY:PT5S}
+  rabbit:
+    exchange: marketflow.notification.commands.v1
+    dead-letter-exchange: marketflow.notification.dlx.v1
+management:
+  endpoint.health.probes.enabled: true
+  endpoints.web.exposure.include: health,info,prometheus
+  metrics.tags.application: ${spring.application.name}
+  tracing.sampling.probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+logging.structured.format.console: ecs
