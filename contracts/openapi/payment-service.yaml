@@ -1,0 +1,75 @@
+openapi: 3.1.0
+info:
+  title: MarketFlow Simulated Payment API
+  version: 1.0.0
+  description: Internal fake-token payment authorization and reconciliation. This API never accepts real payment credentials.
+servers: [{url: "http://localhost:8088"}]
+security: [{internalServiceKey: []}]
+paths:
+  /internal/v1/payments/authorizations:
+    post:
+      summary: Idempotently authorize an order using a fake payment token
+      operationId: authorizePayment
+      parameters: [{$ref: "./common-components.yaml#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/AuthorizationRequest"}}}}
+      responses:
+        "200": {description: Existing or completed authorization, content: {application/json: {schema: {$ref: "#/components/schemas/Payment"}}}}
+        "202": {description: Authorization accepted or awaiting an asynchronous outcome, content: {application/json: {schema: {$ref: "#/components/schemas/Payment"}}}}
+        "409": {$ref: "#/components/responses/Problem"}
+        "422": {$ref: "#/components/responses/Problem"}
+  /internal/v1/payments/{paymentId}/reconciliation:
+    post:
+      summary: Idempotently reconcile an unknown simulated-provider result
+      operationId: reconcilePayment
+      parameters: [{$ref: "#/components/parameters/PaymentId"}, {$ref: "./common-components.yaml#/components/parameters/IdempotencyKey"}]
+      responses: {"200": {description: Reconciled payment, content: {application/json: {schema: {$ref: "#/components/schemas/Payment"}}}}, "202": {description: Outcome remains unknown, content: {application/json: {schema: {$ref: "#/components/schemas/Payment"}}}}}
+  /internal/v1/payments/callbacks/fake:
+    post:
+      summary: Receive a signed callback from the local fake provider
+      operationId: receiveFakeProviderCallback
+      parameters: [{name: X-Fake-Provider-Signature, in: header, required: true, schema: {type: string, minLength: 16, maxLength: 256}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/ProviderCallback"}}}}
+      responses: {"200": {description: Callback accepted or previously processed, content: {application/json: {schema: {$ref: "#/components/schemas/Payment"}}}}, "401": {$ref: "#/components/responses/Problem"}, "409": {$ref: "#/components/responses/Problem"}}
+components:
+  securitySchemes:
+    internalServiceKey: {type: apiKey, in: header, name: X-Internal-Service-Key}
+  parameters:
+    PaymentId: {name: paymentId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}
+  responses:
+    Problem: {description: RFC 9457 problem details, content: {application/problem+json: {schema: {$ref: "./problem-details.yaml#/components/schemas/ProblemDetails"}}}}
+  schemas:
+    AuthorizationRequest:
+      type: object
+      required: [orderId, customerId, amount, currency, fakePaymentToken]
+      properties:
+        orderId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        customerId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        amount: {type: number, minimum: 0.0001, multipleOf: 0.0001}
+        currency: {type: string, pattern: "^[A-Z]{3}$"}
+        fakePaymentToken: {type: string, pattern: "^mf_fake_[a-z0-9_]{1,96}$"}
+      additionalProperties: false
+    Payment:
+      type: object
+      required: [paymentId, orderId, customerId, amount, currency, status, attemptId, manualReview, version, updatedAt]
+      properties:
+        paymentId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        orderId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        customerId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        amount: {type: number, minimum: 0.0001, multipleOf: 0.0001}
+        currency: {type: string, pattern: "^[A-Z]{3}$"}
+        status: {type: string, enum: [CREATED, PROCESSING, AUTHORIZED, DECLINED, FAILED, UNKNOWN]}
+        attemptId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        reasonCode: {type: [string, "null"], maxLength: 80}
+        manualReview: {type: boolean}
+        version: {type: integer, minimum: 1}
+        updatedAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}
+      additionalProperties: false
+    ProviderCallback:
+      type: object
+      required: [providerEventId, providerReference, status]
+      properties:
+        providerEventId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
+        providerReference: {type: string, minLength: 1, maxLength: 120}
+        status: {type: string, enum: [AUTHORIZED, DECLINED, FAILED]}
+        reasonCode: {type: [string, "null"], maxLength: 80}
+      additionalProperties: false

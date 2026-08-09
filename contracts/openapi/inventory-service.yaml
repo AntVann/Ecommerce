@@ -24,6 +24,13 @@ paths:
       security: [{internalServiceKey: []}]
       parameters: [{name: referenceId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}]
       responses: {"200": {description: Released or already-terminal reservation, content: {application/json: {schema: {$ref: "#/components/schemas/Reservation"}}}}, "404": {$ref: "#/components/responses/Problem"}}
+  /internal/v1/inventory/reservations/{referenceId}/confirm:
+    post:
+      summary: Idempotently commit stock held by an active order reservation
+      operationId: confirmInventoryReservation
+      security: [{internalServiceKey: []}]
+      parameters: [{name: referenceId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}]
+      responses: {"200": {description: Confirmed or already-terminal reservation, content: {application/json: {schema: {$ref: "#/components/schemas/Reservation"}}}}, "404": {$ref: "#/components/responses/Problem"}, "409": {$ref: "#/components/responses/Problem"}}
   /api/v1/sellers/{sellerId}/inventory:
     get:
       summary: List seller inventory availability
@@ -56,4 +63,4 @@ components:
     AvailabilityRequest: {type: object, required: [variantIds], properties: {variantIds: {type: array, minItems: 1, maxItems: 100, items: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}}, additionalProperties: false}
     ReservationLine: {type: object, required: [variantId, quantity], properties: {variantId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, quantity: {type: integer, minimum: 1, maximum: 99}}, additionalProperties: false}
     ReservationRequest: {type: object, required: [referenceId, lines, ttlSeconds], properties: {referenceId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, lines: {type: array, minItems: 1, maxItems: 100, items: {$ref: "#/components/schemas/ReservationLine"}}, ttlSeconds: {type: integer, minimum: 60, maximum: 3600}}, additionalProperties: false}
-    Reservation: {type: object, required: [id, referenceId, status, expiresAt, createdAt, updatedAt], properties: {id: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, referenceId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, status: {type: string, enum: [ACTIVE, PENDING, RELEASED, EXPIRED]}, expiresAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}, createdAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}, updatedAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}}, additionalProperties: false}
+    Reservation: {type: object, required: [id, referenceId, status, expiresAt, createdAt, updatedAt], properties: {id: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, referenceId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, status: {type: string, enum: [ACTIVE, PENDING, CONFIRMED, RELEASED, EXPIRED]}, expiresAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}, createdAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}, updatedAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}}, additionalProperties: false}

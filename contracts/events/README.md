@@ -15,3 +15,8 @@ Milestone 1 publishes Identity events to `marketflow.identity.events.v1` and Sel
 `marketflow.seller.events.v1`. Registration carries only user and verification request IDs; a
 verification token is claimed exactly once through the authenticated internal Identity interface.
 Seller decision events use bounded reason codes rather than unrestricted review text.
+
+Milestone 4 publishes normalized Payment facts to `marketflow.payment.events.v1`. Fake payment
+tokens and provider callback payloads are never events. Order publishes confirmation and
+payment-failure facts only after Inventory confirmation or release compensation completes;
+Inventory retains its existing line events and adds reservation-level terminal facts.
