@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InventoryService {
+    private static final String ORDER_CONSUMER = "inventory-order-v1";
     private final InventoryRepository repository;
     private final SellerAuthorizer authorizer;
     private final MeterRegistry metrics;
@@ -118,7 +119,7 @@ public class InventoryService {
             List<ReserveLine> lines,
             Duration ttl,
             String correlationId) {
-        if (repository.processed("inventory-order-v1", eventId)) return;
+        if (repository.processed(ORDER_CONSUMER, eventId)) return;
         reserveInternal(orderId, lines, ttl, correlationId);
     }
 
@@ -169,8 +170,15 @@ public class InventoryService {
 
     @Transactional
     public InventoryRepository.Reservation release(UUID referenceId, String correlationId) {
+        return releaseInternal(referenceId, "RESERVATION_RELEASED", correlationId);
+    }
+
+    private InventoryRepository.Reservation releaseInternal(
+            UUID referenceId, String reasonCode, String correlationId) {
         var reservation =
-                repository.reservation(referenceId).orElseThrow(InventoryService::notFound);
+                repository
+                        .reservationForUpdate(referenceId)
+                        .orElseThrow(InventoryService::notFound);
         if (!("ACTIVE".equals(reservation.status()) || "PENDING".equals(reservation.status())))
             return reservation;
         Instant now = Instant.now(clock);
@@ -182,7 +190,7 @@ public class InventoryService {
                     item.sellerId(),
                     "RELEASE",
                     line.quantity(),
-                    "RESERVATION_RELEASED",
+                    reasonCode,
                     referenceId,
                     null,
                     correlationId,
@@ -192,10 +200,90 @@ public class InventoryService {
                     "inventory.inventory-released.v1",
                     changed,
                     correlationId,
-                    Map.of("referenceId", referenceId, "quantity", line.quantity()));
+                    Map.of(
+                            "referenceId", referenceId,
+                            "quantity", line.quantity(),
+                            "reasonCode", reasonCode));
         }
-        repository.completePendingReservation(reservation.id(), "RELEASED", now);
+        if (!repository.completeReservation(
+                reservation.id(), reservation.status(), "RELEASED", now))
+            throw new IllegalStateException("Reservation changed while it was being released");
+        repository.reservationOutbox(
+                "inventory.inventory-reservation-released.v1",
+                reservation.id(),
+                1,
+                correlationId,
+                Map.of(
+                        "referenceId",
+                        referenceId,
+                        "reservationId",
+                        reservation.id(),
+                        "status",
+                        "RELEASED"),
+                now);
+        metrics.counter("inventory_reservation_terminal_total", "status", "released").increment();
         return repository.reservation(referenceId).orElseThrow();
+    }
+
+    @Transactional
+    public InventoryRepository.Reservation confirm(UUID referenceId, String correlationId) {
+        return confirmInternal(referenceId, correlationId);
+    }
+
+    @Transactional
+    public void confirmOrderReservation(UUID eventId, UUID referenceId, String correlationId) {
+        if (repository.processed(ORDER_CONSUMER, eventId)) return;
+        confirmInternal(referenceId, correlationId);
+    }
+
+    private InventoryRepository.Reservation confirmInternal(
+            UUID referenceId, String correlationId) {
+        var reservation =
+                repository
+                        .reservationForUpdate(referenceId)
+                        .orElseThrow(InventoryService::notFound);
+        if (!("ACTIVE".equals(reservation.status()) || "PENDING".equals(reservation.status())))
+            return reservation;
+        Instant now = Instant.now(clock);
+        for (var line : repository.reservationLines(reservation.id())) {
+            var item = repository.item(line.variantId()).orElseThrow();
+            repository.commit(line.variantId(), line.quantity(), now);
+            repository.movement(
+                    line.variantId(),
+                    item.sellerId(),
+                    "COMMITMENT",
+                    -line.quantity(),
+                    "RESERVATION_CONFIRMED",
+                    referenceId,
+                    null,
+                    correlationId,
+                    now);
+        }
+        if (!repository.completeReservation(
+                reservation.id(), reservation.status(), "CONFIRMED", now))
+            throw new IllegalStateException("Reservation changed while it was being confirmed");
+        repository.reservationOutbox(
+                "inventory.inventory-reservation-confirmed.v1",
+                reservation.id(),
+                1,
+                correlationId,
+                Map.of(
+                        "referenceId",
+                        referenceId,
+                        "reservationId",
+                        reservation.id(),
+                        "status",
+                        "CONFIRMED"),
+                now);
+        metrics.counter("inventory_reservation_terminal_total", "status", "confirmed").increment();
+        return repository.reservation(referenceId).orElseThrow();
+    }
+
+    @Transactional
+    public void releaseOrderReservation(
+            UUID eventId, UUID referenceId, String reasonCode, String correlationId) {
+        if (repository.processed(ORDER_CONSUMER, eventId)) return;
+        releaseInternal(referenceId, reasonCode, correlationId);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -213,7 +301,7 @@ public class InventoryService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordOrderReservationFailure(
             UUID eventId, UUID referenceId, String reasonCode, String correlationId) {
-        if (repository.processed("inventory-order-v1", eventId)) return;
+        if (repository.processed(ORDER_CONSUMER, eventId)) return;
         repository.outbox(
                 "inventory.inventory-reservation-failed.v1",
                 referenceId,

@@ -40,4 +40,29 @@ class InternalInventoryControllerTest {
                 .extracting("code")
                 .isEqualTo("INTERNAL_AUTHENTICATION_401");
     }
+
+    @Test
+    void confirmationRequiresServiceKeyAndReturnsTerminalReservation() {
+        UUID reference = UUID.randomUUID();
+        var expected =
+                new InventoryRepository.Reservation(
+                        UUID.randomUUID(),
+                        reference,
+                        "CONFIRMED",
+                        Instant.EPOCH,
+                        Instant.EPOCH,
+                        Instant.EPOCH);
+        when(inventory.confirm(reference, "unknown")).thenReturn(expected);
+        var controller =
+                new InventoryController(
+                        inventory,
+                        new InventorySecurityProperties(
+                                "identity", "issuer", "audience", "seller", "secret"));
+
+        assertThat(controller.confirm("secret", reference)).isEqualTo(expected);
+        assertThatThrownBy(() -> controller.confirm("wrong", reference))
+                .isInstanceOf(ApiException.class)
+                .extracting("code")
+                .isEqualTo("INTERNAL_AUTHENTICATION_401");
+    }
 }

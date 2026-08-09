@@ -36,7 +36,7 @@ class InventoryMigrationIT {
                 reference);
 
         Flyway latest = flyway(null);
-        assertThat(latest.migrate().migrationsExecuted).isOne();
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(
                         jdbc.queryForObject(
                                 "SELECT status FROM inventory_reservation WHERE reference_id=?",
@@ -51,6 +51,24 @@ class InventoryMigrationIT {
                                 String.class,
                                 reference))
                 .isEqualTo("ACTIVE");
+        jdbc.update(
+                "UPDATE inventory_reservation SET status='CONFIRMED' WHERE reference_id=?",
+                reference);
+        UUID variant = UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO inventory_item(variant_id,seller_id,on_hand,reserved,created_at,updated_at) VALUES (?,?,1,0,now(),now())",
+                variant,
+                UUID.randomUUID());
+        jdbc.update(
+                "INSERT INTO stock_movement(id,variant_id,seller_id,movement_type,quantity_delta,reason_code,correlation_id,occurred_at) SELECT ?,variant_id,seller_id,'COMMITMENT',-1,'RESERVATION_CONFIRMED','migration-test',now() FROM inventory_item WHERE variant_id=?",
+                UUID.randomUUID(),
+                variant);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT movement_type FROM stock_movement WHERE variant_id=?",
+                                String.class,
+                                variant))
+                .isEqualTo("COMMITMENT");
     }
 
     private static Flyway flyway(MigrationVersion target) {
