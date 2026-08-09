@@ -13,6 +13,12 @@ retry returns the original order; reusing a key with different input returns `40
 items, status history, Saga, idempotency result, and `order.order-created.v1` outbox record commit
 atomically. `GET /api/v1/orders/{orderId}` enforces customer ownership.
 
+Seller fulfillment uses the `FULFILLMENT_WRITE` permission. Sellers create idempotent shipments
+only for their own order lines using `POST /api/v1/sellers/{sellerId}/orders/{orderId}/shipments`.
+`If-Match` protects transitions to `IN_TRANSIT` and `DELIVERED`; customers read their shipments
+at `GET /api/v1/orders/{orderId}/shipments`. Creation updates fulfilled quantities and publishes
+`order.shipment-created.v1`; `order.order-shipped.v1` is emitted only when every line is fulfilled.
+
 The Order service consumes the existing variant-level Inventory reserved, reservation-failed, and
 released events. Inbox deduplication and per-variant progress prevent duplicate transitions. It
 does not authorize or capture payment, confirm orders, fulfill shipments, or deliver notifications.

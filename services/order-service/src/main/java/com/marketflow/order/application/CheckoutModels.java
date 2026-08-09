@@ -65,7 +65,53 @@ public final class CheckoutModels {
             Instant updatedAt,
             List<OrderItem> items,
             UUID paymentId,
-            String paymentState) {}
+            String paymentState,
+            List<FulfillmentModels.ShipmentView> shipments) {
+        public OrderView(
+                UUID id,
+                UUID customerId,
+                UUID cartId,
+                long cartVersion,
+                String status,
+                String cancellationReason,
+                String currency,
+                BigDecimal subtotal,
+                BigDecimal taxTotal,
+                BigDecimal shippingTotal,
+                BigDecimal discountTotal,
+                BigDecimal grandTotal,
+                Address shippingAddress,
+                Address billingAddress,
+                long version,
+                Instant createdAt,
+                Instant updatedAt,
+                List<OrderItem> items,
+                UUID paymentId,
+                String paymentState) {
+            this(
+                    id,
+                    customerId,
+                    cartId,
+                    cartVersion,
+                    status,
+                    cancellationReason,
+                    currency,
+                    subtotal,
+                    taxTotal,
+                    shippingTotal,
+                    discountTotal,
+                    grandTotal,
+                    shippingAddress,
+                    billingAddress,
+                    version,
+                    createdAt,
+                    updatedAt,
+                    items,
+                    paymentId,
+                    paymentState,
+                    List.of());
+        }
+    }
 
     public record OrderPage(List<OrderView> items, String nextCursor) {}
 
