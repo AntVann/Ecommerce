@@ -1,0 +1,29 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: identity-service, namespace: marketflow-local}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: identity-service}
+  minReplicas: 1
+  maxReplicas: 3
+  behavior: {scaleDown: {stabilizationWindowSeconds: 300}}
+  metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}}]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: order-service, namespace: marketflow-local}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: order-service}
+  minReplicas: 1
+  maxReplicas: 3
+  behavior: {scaleDown: {stabilizationWindowSeconds: 300}}
+  metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: 65}}}]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: notification-service, namespace: marketflow-local}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: notification-service}
+  minReplicas: 1
+  maxReplicas: 3
+  behavior: {scaleDown: {stabilizationWindowSeconds: 300}}
+  metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}}]

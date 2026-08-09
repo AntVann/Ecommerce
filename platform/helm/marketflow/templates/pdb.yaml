@@ -1,0 +1,15 @@
+{{- if .Values.pdb.enabled }}
+{{- range $name, $service := .Values.services }}
+{{- if $service.pdb }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    {{- include "marketflow.labels" $ | nindent 4 }}
+spec: {minAvailable: {{ $.Values.pdb.minAvailable }}, selector: {matchLabels: {app.kubernetes.io/name: {{ $name }}}}}
+{{- end }}
+{{- end }}
+{{- end }}

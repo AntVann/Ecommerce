@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: marketflow-runtime
+  namespace: marketflow-local
+data:
+  MARKETFLOW_ENVIRONMENT: local-kubernetes
+  MARKETFLOW_DEPLOYMENT_PROFILE: free-local
+  IDENTITY_TOKEN_ISSUER: http://identity-service:8081
+  IDENTITY_TOKEN_AUDIENCE: marketflow-api
+  IDENTITY_BASE_URL: http://identity-service:8081
+  SELLER_BASE_URL: http://seller-service:8082
+  CATALOG_BASE_URL: http://catalog-service:8083
+  INVENTORY_BASE_URL: http://inventory-service:8084
+  SEARCH_BASE_URL: http://search-service:8085
+  CART_BASE_URL: http://cart-service:8086
+  ORDER_BASE_URL: http://order-service:8087
+  PAYMENT_BASE_URL: http://payment-service:8088
+  NOTIFICATION_BASE_URL: http://notification-service:8089
+  IDENTITY_DATABASE_URL: jdbc:postgresql://postgres:5432/marketflow_identity
+  SELLER_DATABASE_URL: jdbc:postgresql://postgres:5432/marketflow_seller
+  CATALOG_DATABASE_URL: jdbc:postgresql://postgres:5432/marketflow_catalog
+  INVENTORY_DATABASE_URL: jdbc:postgresql://postgres:5432/marketflow_inventory
+  SEARCH_DATABASE_URL: jdbc:postgresql://postgres:5432/marketflow_search
+  ORDER_DATABASE_URL: jdbc:postgresql://postgres:5432/marketflow_order
+  PAYMENT_DATABASE_URL: jdbc:postgresql://postgres:5432/marketflow_payment
+  NOTIFICATION_DATABASE_URL: jdbc:postgresql://postgres:5432/marketflow_notification
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  RABBITMQ_ADDRESSES: rabbitmq:5672
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_VHOST: /marketflow
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  OPENSEARCH_URL: http://opensearch:9200
+  OBJECT_STORAGE_ENDPOINT: http://object-storage:8333
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+  MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "0.10"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"

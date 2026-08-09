@@ -1,0 +1,65 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny-ingress, namespace: marketflow-local}
+spec: {podSelector: {}, policyTypes: [Ingress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny-egress, namespace: marketflow-local}
+spec: {podSelector: {}, policyTypes: [Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-marketflow-http, namespace: marketflow-local}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/part-of: marketflow}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: marketflow-local}}
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: ingress-nginx}}
+      ports:
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8081}
+        - {protocol: TCP, port: 8082}
+        - {protocol: TCP, port: 8083}
+        - {protocol: TCP, port: 8084}
+        - {protocol: TCP, port: 8085}
+        - {protocol: TCP, port: 8086}
+        - {protocol: TCP, port: 8087}
+        - {protocol: TCP, port: 8088}
+        - {protocol: TCP, port: 8089}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-runtime-egress, namespace: marketflow-local}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/part-of: marketflow}}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: marketflow-local}}}]
+      ports:
+        - {protocol: TCP, port: 5432}
+        - {protocol: TCP, port: 5672}
+        - {protocol: TCP, port: 6379}
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8081}
+        - {protocol: TCP, port: 8082}
+        - {protocol: TCP, port: 8083}
+        - {protocol: TCP, port: 8084}
+        - {protocol: TCP, port: 8085}
+        - {protocol: TCP, port: 8086}
+        - {protocol: TCP, port: 8087}
+        - {protocol: TCP, port: 8088}
+        - {protocol: TCP, port: 8089}
+        - {protocol: TCP, port: 9092}
+        - {protocol: TCP, port: 9200}
+    - ports:
+        - {protocol: TCP, port: 443}
+        - {protocol: TCP, port: 5432}
+        - {protocol: TCP, port: 9092}
+        - {protocol: TCP, port: 5672}
+        - {protocol: TCP, port: 6379}
+        - {protocol: TCP, port: 9200}

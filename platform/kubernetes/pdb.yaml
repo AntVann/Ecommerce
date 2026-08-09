@@ -1,0 +1,19 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: identity-service, namespace: marketflow-local}
+spec: {minAvailable: 1, selector: {matchLabels: {app.kubernetes.io/name: identity-service}}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: order-service, namespace: marketflow-local}
+spec: {minAvailable: 1, selector: {matchLabels: {app.kubernetes.io/name: order-service}}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: inventory-service, namespace: marketflow-local}
+spec: {minAvailable: 1, selector: {matchLabels: {app.kubernetes.io/name: inventory-service}}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: payment-service, namespace: marketflow-local}
+spec: {minAvailable: 1, selector: {matchLabels: {app.kubernetes.io/name: payment-service}}}
