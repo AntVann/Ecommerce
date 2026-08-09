@@ -36,7 +36,7 @@ public class OrderRepository {
 
     public boolean claim(UUID customer, String operation, String key, String hash, Instant now) {
         return jdbc.update(
-                        "INSERT INTO idempotency_record(customer_id,operation,idempotency_key,request_hash,created_at,expires_at) VALUES (?,?,?,?,?,?+interval '24 hours') ON CONFLICT DO NOTHING",
+                        "INSERT INTO idempotency_record(customer_id,operation,idempotency_key,request_hash,created_at,expires_at) VALUES (?,?,?,?,?,CAST(? AS TIMESTAMPTZ) + interval '24 hours') ON CONFLICT DO NOTHING",
                         customer,
                         operation,
                         key,
@@ -75,9 +75,9 @@ public class OrderRepository {
     }
 
     public void lockCart(UUID customer, UUID cart, long version) {
-        jdbc.queryForObject(
+        jdbc.query(
                 "SELECT pg_advisory_xact_lock(hashtextextended(?,0))",
-                Long.class,
+                rs -> {},
                 customer + ":" + cart + ":" + version);
     }
 

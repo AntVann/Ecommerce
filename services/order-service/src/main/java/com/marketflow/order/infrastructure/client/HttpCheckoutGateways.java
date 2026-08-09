@@ -132,14 +132,25 @@ public class HttpCheckoutGateways implements CheckoutGateways {
 
     public List<Availability> availability(List<CartLine> lines) {
         try {
-            return builder.baseUrl(p.inventoryBaseUrl())
-                    .build()
-                    .post()
-                    .uri("/internal/v1/inventory/availability")
-                    .header("X-Internal-Service-Key", p.internalServiceKey())
-                    .body(Map.of("variantIds", lines.stream().map(CartLine::variantId).toList()))
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<List<Availability>>() {});
+            List<RawAvailability> response =
+                    builder.baseUrl(p.inventoryBaseUrl())
+                            .build()
+                            .post()
+                            .uri("/internal/v1/inventory/availability")
+                            .header("X-Internal-Service-Key", p.internalServiceKey())
+                            .body(
+                                    Map.of(
+                                            "variantIds",
+                                            lines.stream().map(CartLine::variantId).toList()))
+                            .retrieve()
+                            .body(new ParameterizedTypeReference<List<RawAvailability>>() {});
+            if (response == null) unavailable("Inventory validation returned no response.");
+            return response.stream()
+                    .map(
+                            value ->
+                                    new Availability(
+                                            value.variantId(), value.onHand() - value.reserved()))
+                    .toList();
         } catch (RuntimeException e) {
             unavailable("Inventory validation is unavailable.");
             return List.of();
@@ -163,6 +174,8 @@ public class HttpCheckoutGateways implements CheckoutGateways {
     private record CartRequest(UUID customerId, UUID cartId, long cartVersion) {}
 
     private record SellerStatus(UUID sellerId, String status) {}
+
+    private record RawAvailability(UUID variantId, int onHand, int reserved) {}
 
     private record RawCatalogLine(
             UUID variantId,
