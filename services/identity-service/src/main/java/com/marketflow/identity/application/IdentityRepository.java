@@ -57,6 +57,24 @@ public class IdentityRepository {
                 .findFirst();
     }
 
+    public List<SecurityEvent> securityEvents(int limit, int offset) {
+        return jdbc.query(
+                "SELECT id,event_type,actor_user_id,subject_user_id,outcome,reason_code,correlation_id,occurred_at FROM security_event ORDER BY occurred_at DESC,id DESC LIMIT ? OFFSET ?",
+                (rs, row) ->
+                        new SecurityEvent(
+                                rs.getObject("id", UUID.class),
+                                rs.getString("event_type"),
+                                rs.getObject("actor_user_id", UUID.class),
+                                rs.getObject("subject_user_id", UUID.class),
+                                rs.getString("outcome"),
+                                rs.getString("reason_code"),
+                                rs.getString("correlation_id"),
+                                rs.getObject("occurred_at", java.time.OffsetDateTime.class)
+                                        .toInstant()),
+                Math.min(limit, 200),
+                Math.max(offset, 0));
+    }
+
     public void insertAccount(
             UUID userId,
             String email,
@@ -408,6 +426,16 @@ public class IdentityRepository {
                 sourceHash,
                 db(now));
     }
+
+    public record SecurityEvent(
+            UUID id,
+            String eventType,
+            UUID actorUserId,
+            UUID subjectUserId,
+            String outcome,
+            String reasonCode,
+            String correlationId,
+            Instant occurredAt) {}
 
     public void outbox(
             String eventType,

@@ -111,6 +111,12 @@ paths:
         "401": {$ref: "#/components/responses/Problem"}
         "403": {$ref: "#/components/responses/Problem"}
         "404": {$ref: "#/components/responses/Problem"}
+  /api/v1/admin/audit-events:
+    get:
+      summary: Read identity security audit events
+      operationId: listIdentityAuditEvents
+      parameters: [{name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}, {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}]
+      responses: {"200": {description: Recent identity security events, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/SecurityEvent"}}}}}, "403": {$ref: "#/components/responses/Problem"}}
   /internal/v1/email-verifications/{verificationId}/token:
     post:
       summary: Claim a verification token for delivery
@@ -269,4 +275,9 @@ components:
         userId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}
         active: {type: boolean}
         roles: {type: array, uniqueItems: true, items: {type: string}}
+      additionalProperties: false
+    SecurityEvent:
+      type: object
+      required: [id, eventType, outcome, occurredAt]
+      properties: {id: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, eventType: {type: string}, actorUserId: {anyOf: [{$ref: "./common-components.yaml#/components/schemas/Identifier"}, {type: "null"}]}, subjectUserId: {anyOf: [{$ref: "./common-components.yaml#/components/schemas/Identifier"}, {type: "null"}]}, outcome: {type: string}, reasonCode: {type: [string, "null"]}, correlationId: {type: [string, "null"]}, occurredAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}}
       additionalProperties: false

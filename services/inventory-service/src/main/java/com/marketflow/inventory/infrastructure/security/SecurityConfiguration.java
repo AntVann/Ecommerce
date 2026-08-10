@@ -45,7 +45,8 @@ public class SecurityConfiguration {
                                 r.requestMatchers(
                                                 "/actuator/health/**",
                                                 "/actuator/info",
-                                                "/actuator/prometheus")
+                                                "/actuator/prometheus",
+                                                "/api/v1/variants/*/availability")
                                         .permitAll()
                                         .requestMatchers("/internal/v1/**")
                                         .permitAll()

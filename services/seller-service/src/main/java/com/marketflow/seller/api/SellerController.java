@@ -70,6 +70,14 @@ public final class SellerController {
                 .toList();
     }
 
+    @GetMapping("/api/v1/admin/audit-events")
+    List<SellerRepository.SecurityEvent> auditEvents(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(200) int limit,
+            @RequestParam(defaultValue = "0") @Min(0) int offset) {
+        return sellers.securityEvents(principal(jwt), limit, offset, correlationId());
+    }
+
     @PostMapping("/api/v1/admin/sellers/{sellerId}/approve")
     ResponseEntity<SellerResponse> approve(
             @AuthenticationPrincipal Jwt jwt,

@@ -60,6 +60,24 @@ public class SellerRepository {
                 limit);
     }
 
+    public List<SecurityEvent> securityEvents(int limit, int offset) {
+        return jdbc.query(
+                "SELECT id,event_type,actor_user_id,seller_id,outcome,reason_code,correlation_id,occurred_at FROM security_event ORDER BY occurred_at DESC,id DESC LIMIT ? OFFSET ?",
+                (rs, row) ->
+                        new SecurityEvent(
+                                rs.getObject("id", UUID.class),
+                                rs.getString("event_type"),
+                                rs.getObject("actor_user_id", UUID.class),
+                                rs.getObject("seller_id", UUID.class),
+                                rs.getString("outcome"),
+                                rs.getString("reason_code"),
+                                rs.getString("correlation_id"),
+                                rs.getObject("occurred_at", java.time.OffsetDateTime.class)
+                                        .toInstant()),
+                Math.min(limit, 200),
+                Math.max(offset, 0));
+    }
+
     public UUID createApplication(
             UUID applicantId,
             String displayName,
@@ -298,6 +316,16 @@ public class SellerRepository {
                 correlationId,
                 db(now));
     }
+
+    public record SecurityEvent(
+            UUID id,
+            String eventType,
+            UUID actorUserId,
+            UUID sellerId,
+            String outcome,
+            String reasonCode,
+            String correlationId,
+            Instant occurredAt) {}
 
     public void outbox(
             String eventType,

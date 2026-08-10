@@ -4,6 +4,7 @@ import com.marketflow.catalog.application.CatalogRepository;
 import com.marketflow.catalog.application.CatalogService;
 import com.marketflow.catalog.domain.Money;
 import com.marketflow.catalog.infrastructure.security.CatalogSecurityProperties;
+import com.marketflow.catalog.infrastructure.storage.LocalImageStorage;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -12,6 +13,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +21,11 @@ import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -30,16 +36,32 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 public final class CatalogController {
     private final CatalogService catalog;
     private final CatalogSecurityProperties properties;
+    private final LocalImageStorage imageStorage;
 
-    public CatalogController(CatalogService catalog, CatalogSecurityProperties properties) {
+    @Autowired
+    public CatalogController(
+            CatalogService catalog,
+            CatalogSecurityProperties properties,
+            LocalImageStorage imageStorage) {
         this.catalog = catalog;
         this.properties = properties;
+        this.imageStorage = imageStorage;
+    }
+
+    public CatalogController(CatalogService catalog, CatalogSecurityProperties properties) {
+        this(
+                catalog,
+                properties,
+                new LocalImageStorage(
+                        System.getProperty("java.io.tmpdir") + "/marketflow-images-test"));
     }
 
     @GetMapping("/api/v1/categories")
@@ -139,6 +161,65 @@ public final class CatalogController {
                 .body(image);
     }
 
+    @PostMapping(
+            value = "/api/v1/sellers/{sellerId}/products/{productId}/images/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<CatalogRepository.Image> uploadImage(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID sellerId,
+            @PathVariable UUID productId,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam("altText") @NotBlank @Size(max = 300) String altText,
+            @RequestParam(name = "displayOrder", defaultValue = "0") @Min(0) int displayOrder) {
+        if (file.isEmpty() || file.getSize() > 10_485_760) {
+            throw new ApiException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "CATALOG_IMAGE_UPLOAD_INVALID_400",
+                    "Image must be between 1 byte and 10 MB.");
+        }
+        String contentType = file.getContentType();
+        if (!("image/jpeg".equals(contentType) || "image/png".equals(contentType))) {
+            throw new ApiException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "CATALOG_IMAGE_UPLOAD_INVALID_400",
+                    "Only JPEG and PNG images are supported by local storage.");
+        }
+        final BufferedImage image;
+        try {
+            image = ImageIO.read(file.getInputStream());
+        } catch (java.io.IOException exception) {
+            throw new ApiException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "CATALOG_IMAGE_UPLOAD_INVALID_400",
+                    "Image data could not be read.");
+        }
+        if (image == null || image.getWidth() < 1 || image.getHeight() < 1) {
+            throw new ApiException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "CATALOG_IMAGE_UPLOAD_INVALID_400",
+                    "The uploaded file is not a valid image.");
+        }
+        UUID userId = UUID.fromString(jwt.getSubject());
+        catalog.authorizeImageUpload(userId, sellerId, productId, correlation());
+        String objectKey = imageStorage.store(sellerId, productId, file);
+        var saved =
+                catalog.addImage(
+                        userId,
+                        sellerId,
+                        productId,
+                        objectKey,
+                        contentType,
+                        file.getSize(),
+                        image.getWidth(),
+                        image.getHeight(),
+                        altText,
+                        displayOrder,
+                        correlation());
+        return ResponseEntity.created(
+                        URI.create("/api/v1/products/" + productId + "/images/" + saved.id()))
+                .body(saved);
+    }
+
     @PatchMapping("/api/v1/sellers/{sellerId}/products/{productId}/variants/{variantId}/price")
     ResponseEntity<CatalogRepository.Variant> changePrice(
             @AuthenticationPrincipal Jwt jwt,
@@ -212,6 +293,25 @@ public final class CatalogController {
     @GetMapping("/api/v1/products/{productId}")
     CatalogService.CatalogView detail(@PathVariable UUID productId) {
         return catalog.getPublic(productId);
+    }
+
+    @GetMapping("/api/v1/products/{productId}/images/{imageId}")
+    ResponseEntity<byte[]> image(@PathVariable UUID productId, @PathVariable UUID imageId) {
+        var metadata = catalog.publicImage(productId, imageId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, metadata.contentType())
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(metadata.byteSize()))
+                .body(imageStorage.read(metadata.objectKey()));
+    }
+
+    @GetMapping("/api/v1/sellers/{sellerId}/products")
+    List<CatalogService.CatalogView> sellerProducts(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID sellerId,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit) {
+        return catalog.sellerProducts(
+                UUID.fromString(jwt.getSubject()), sellerId, status, limit, correlation());
     }
 
     @GetMapping("/internal/v1/catalog/products/export")

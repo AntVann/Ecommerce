@@ -38,6 +38,11 @@ public final class InventoryController {
         this.properties = properties;
     }
 
+    @GetMapping("/api/v1/variants/{variantId}/availability")
+    InventoryRepository.PublicAvailability publicAvailability(@PathVariable UUID variantId) {
+        return inventory.publicAvailability(variantId);
+    }
+
     @GetMapping("/api/v1/sellers/{sellerId}/inventory")
     List<InventoryRepository.Item> list(
             @AuthenticationPrincipal Jwt jwt, @PathVariable UUID sellerId) {

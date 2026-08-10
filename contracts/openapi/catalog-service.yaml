@@ -23,7 +23,19 @@ paths:
       security: []
       parameters: [{$ref: "#/components/parameters/ProductId"}]
       responses: {"200": {$ref: "#/components/responses/ProductView"}, "404": {$ref: "#/components/responses/Problem"}}
+  /api/v1/products/{productId}/images/{imageId}:
+    get:
+      summary: Download an image for a published product
+      operationId: getPublishedProductImage
+      security: []
+      parameters: [{$ref: "#/components/parameters/ProductId"}, {name: imageId, in: path, required: true, schema: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}]
+      responses: {"200": {description: Image bytes}, "404": {$ref: "#/components/responses/Problem"}}
   /api/v1/sellers/{sellerId}/products:
+    get:
+      summary: List products owned by the authenticated seller
+      operationId: listSellerProducts
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {name: status, in: query, required: false, schema: {$ref: "#/components/schemas/ProductStatus"}}, {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}]
+      responses: {"200": {description: Seller product views, content: {application/json: {schema: {type: array, items: {type: object}}}}}, "403": {$ref: "#/components/responses/Problem"}}
     post:
       summary: Create a seller product draft
       operationId: createProduct
@@ -51,6 +63,13 @@ paths:
       parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}]
       requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/ImageRequest"}}}}
       responses: {"201": {description: Image metadata created}, "400": {$ref: "#/components/responses/Problem"}}
+  /api/v1/sellers/{sellerId}/products/{productId}/images/upload:
+    post:
+      summary: Upload a local development image and create its metadata
+      operationId: uploadProductImage
+      parameters: [{$ref: "#/components/parameters/SellerId"}, {$ref: "#/components/parameters/ProductId"}]
+      requestBody: {required: true, content: {multipart/form-data: {schema: {type: object, required: [file, altText], properties: {file: {type: string, format: binary}, altText: {type: string, minLength: 1, maxLength: 300}, displayOrder: {type: integer, minimum: 0, default: 0}}}}}}
+      responses: {"201": {description: Uploaded image metadata}, "400": {$ref: "#/components/responses/Problem"}}
   /api/v1/sellers/{sellerId}/products/{productId}/variants/{variantId}/price:
     patch:
       summary: Change a variant price

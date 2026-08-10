@@ -268,8 +268,34 @@ public class CatalogService {
         return view(product);
     }
 
+    public CatalogRepository.Image publicImage(UUID productId, UUID imageId) {
+        var product =
+                repository
+                        .find(productId)
+                        .filter(
+                                p ->
+                                        "ACTIVE".equals(p.status())
+                                                && repository.sellerApproved(p.sellerId()))
+                        .orElseThrow(CatalogService::notFound);
+        return repository.image(product.id(), imageId).orElseThrow(CatalogService::notFound);
+    }
+
+    public void authorizeImageUpload(
+            UUID userId, UUID sellerId, UUID productId, String correlationId) {
+        authorize(sellerId, userId, correlationId);
+        owned(productId, sellerId);
+    }
+
     public List<CatalogView> export(long offset, int limit) {
         return repository.export(offset, Math.min(limit, 500)).stream().map(this::view).toList();
+    }
+
+    public List<CatalogView> sellerProducts(
+            UUID userId, UUID sellerId, String status, int limit, String correlationId) {
+        authorize(sellerId, userId, correlationId);
+        return repository.sellerProducts(sellerId, status, Math.min(limit, 100)).stream()
+                .map(this::view)
+                .toList();
     }
 
     public List<CheckoutValidation> validateCheckout(List<UUID> variantIds) {

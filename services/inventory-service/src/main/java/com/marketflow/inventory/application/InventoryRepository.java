@@ -378,6 +378,8 @@ public class InventoryRepository {
         }
     }
 
+    public record PublicAvailability(UUID variantId, int available, Instant updatedAt) {}
+
     public record Movement(
             UUID id,
             UUID variantId,

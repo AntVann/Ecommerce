@@ -1,4 +1,4 @@
-import type { ProblemDetails, Product, SearchResponse, Cart, Order, OrderPage, Shipment, Seller, InventoryItem } from './types';
+import type { ProblemDetails, Product, SearchResponse, Cart, Order, OrderPage, Shipment, Seller, InventoryItem, PublicAvailability, AuditEvent, Image } from './types';
 
 export type Service = 'identity' | 'seller' | 'catalog' | 'inventory' | 'search' | 'cart' | 'order' | 'notification';
 const bases: Record<Service, string> = {
@@ -20,7 +20,7 @@ export class ApiError extends Error {
 export async function request<T>(service: Service, path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
-  if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
   headers.set('X-Correlation-ID', crypto.randomUUID());
   if (path.includes('/auth/refresh') || path.includes('/auth/logout') || service === 'cart') {
@@ -47,6 +47,8 @@ export const api = {
   categories: () => request<unknown[]>('catalog', '/categories'),
   product: (id: string) => request<Product>('catalog', `/products/${id}`),
   createProduct: (sellerId: string, payload: unknown) => request<Product>('catalog', `/sellers/${sellerId}/products`, { method: 'POST', body: JSON.stringify(payload) }),
+  sellerProducts: (sellerId: string, status?: string) => request<Product[]>('catalog', `/sellers/${sellerId}/products?limit=100${status ? `&status=${encodeURIComponent(status)}` : ''}`),
+  uploadImage: (sellerId: string, productId: string, file: File, altText: string, displayOrder = 0) => { const body = new FormData(); body.append('file', file); body.append('altText', altText); body.append('displayOrder', String(displayOrder)); return request<Image>('catalog', `/sellers/${sellerId}/products/${productId}/images/upload`, { method: 'POST', body }); },
   search: (params: URLSearchParams) => request<SearchResponse>('search', `/products?${params.toString()}`),
   cart: () => request<Cart>('cart', '/cart'),
   addToCart: (variantId: string, quantity: number) => request<Cart>('cart', '/cart/items', { method: 'POST', body: JSON.stringify({ variantId, quantity }) }),
@@ -65,6 +67,9 @@ export const api = {
   sellerAction: (id: string, action: 'approve' | 'reject' | 'suspend', version: number, reason?: string) => request<Seller>('seller', `/admin/sellers/${id}/${action}`, { method: 'POST', headers: { 'If-Match': `"${version}"`, 'Idempotency-Key': crypto.randomUUID() }, body: action === 'approve' ? undefined : JSON.stringify({ reason }) }),
   sellerOrders: (sellerId: string) => request<{ items: Order[]; nextCursor?: string }>('order', `/sellers/${sellerId}/orders?limit=25`),
   inventory: (sellerId: string) => request<InventoryItem[]>('inventory', `/sellers/${sellerId}/inventory`),
+  availability: (variantId: string) => request<PublicAvailability>('inventory', `/variants/${variantId}/availability`),
   adjustInventory: (sellerId: string, variantId: string, delta: number, version: number) => request<InventoryItem>('inventory', `/sellers/${sellerId}/inventory/${variantId}/adjustments`, { method: 'POST', headers: { 'If-Match': `"${version}"`, 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify({ quantityDelta: delta, reasonCode: 'UI_ADJUSTMENT' }) }),
-  createShipment: (sellerId: string, orderId: string, payload: unknown) => request<Shipment>('order', `/sellers/${sellerId}/orders/${orderId}/shipments`, { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify(payload) })
+  createShipment: (sellerId: string, orderId: string, payload: unknown) => request<Shipment>('order', `/sellers/${sellerId}/orders/${orderId}/shipments`, { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify(payload) }),
+  auditEvents: () => request<AuditEvent[]>('identity', '/admin/audit-events?limit=100'),
+  sellerAuditEvents: () => request<AuditEvent[]>('seller', '/admin/audit-events?limit=100')
 };

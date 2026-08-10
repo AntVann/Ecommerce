@@ -122,6 +122,12 @@ paths:
             application/json:
               schema: {type: array, items: {$ref: "#/components/schemas/SellerResponse"}}
         "403": {$ref: "#/components/responses/Problem"}
+  /api/v1/admin/audit-events:
+    get:
+      summary: Read seller security audit events
+      operationId: listSellerAuditEvents
+      parameters: [{name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}, {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}]
+      responses: {"200": {description: Recent seller security events, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/SecurityEvent"}}}}}, "403": {$ref: "#/components/responses/Problem"}}
   /api/v1/admin/sellers/{sellerId}/approve:
     post:
       summary: Approve a pending seller
@@ -236,3 +242,4 @@ components:
       additionalProperties: false
     SellerStatusValidationRequest: {type: object, required: [sellerIds], properties: {sellerIds: {type: array, minItems: 1, maxItems: 100, items: {$ref: "./common-components.yaml#/components/schemas/Identifier"}}}, additionalProperties: false}
     SellerStatusValidation: {type: object, required: [sellerId, status], properties: {sellerId: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, status: {type: string, enum: [PENDING_REVIEW, APPROVED, REJECTED, SUSPENDED, CLOSED, NOT_FOUND]}, version: {type: [integer, "null"], minimum: 1}}, additionalProperties: false}
+    SecurityEvent: {type: object, required: [id, eventType, outcome, occurredAt], properties: {id: {$ref: "./common-components.yaml#/components/schemas/Identifier"}, eventType: {type: string}, actorUserId: {anyOf: [{$ref: "./common-components.yaml#/components/schemas/Identifier"}, {type: "null"}]}, sellerId: {anyOf: [{$ref: "./common-components.yaml#/components/schemas/Identifier"}, {type: "null"}]}, outcome: {type: string}, reasonCode: {type: [string, "null"]}, correlationId: {type: [string, "null"]}, occurredAt: {$ref: "./common-components.yaml#/components/schemas/UtcTimestamp"}}, additionalProperties: false}
