@@ -4,13 +4,13 @@
 
 Start Compose, wait for health, and run the seeded fixture:
 
-`powershell
+```powershell
 docker compose up -d --wait
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\seed-demo-checkout.ps1
 cd frontend/web
 npm ci
 npm run dev
-`
+```
 
 Open http://localhost:5173.
 
