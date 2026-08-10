@@ -4,7 +4,7 @@ MarketFlow is a multi-vendor marketplace implemented as independently owned boun
 
 ## Context
 
-`mermaid
+```mermaid
 flowchart TB
     customer[Customer] --> ui[React UI]
     sellerUser[Seller] --> ui
@@ -15,7 +15,7 @@ flowchart TB
     contexts --> events[Kafka domain events]
     contexts --> tasks[RabbitMQ task queues]
     contexts --> telemetry[Logs / Metrics / Traces]
-`
+```
 
 The UI is a client of the APIs, not a second authorization layer. Search is a projection and never the catalog source of truth. Cart prices are advisory and checkout revalidates current state.
 

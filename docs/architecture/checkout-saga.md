@@ -4,7 +4,7 @@ Order is the Saga orchestrator because it owns the customer-visible order state 
 
 ## Flow
 
-`mermaid
+```mermaid
 stateDiagram-v2
     [*] --> PENDING
     PENDING --> INVENTORY_RESERVED: reservation confirmed
@@ -17,7 +17,7 @@ stateDiagram-v2
     INVENTORY_RELEASE_PENDING --> CANCELLED: release confirmed
     MANUAL_REVIEW --> CONFIRMED: reviewed outcome
     MANUAL_REVIEW --> CANCELLED: reviewed compensation
-`
+```
 
 ## Invariants
 

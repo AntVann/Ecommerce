@@ -9,7 +9,7 @@
 
 ## Topology
 
-`mermaid
+```mermaid
 flowchart LR
     service[Services] --> logs[Structured logs]
     service --> metrics[Prometheus]
@@ -19,7 +19,7 @@ flowchart LR
     logs --> operator[Local operator]
     traces --> operator
     grafana --> operator
-`
+```
 
 Local dashboards and alert rules are under platform/observability. Use docs/runbooks/local-development.md and docs/runbooks/chaos-recovery.md for checks.
 
