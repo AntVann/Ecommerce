@@ -13,7 +13,7 @@
 
 Commands used by the project include:
 
-`powershell
+```powershell
 .\mvnw.cmd -B clean verify
 docker compose config
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate-contracts.ps1
@@ -24,6 +24,6 @@ npm run lint
 npm run test
 npm run build
 npm run test:e2e
-`
+```
 
 Milestone reports and docs/release/release-candidate-report.md record which commands actually passed in a given environment. A command that was unavailable is documented as unavailable. This project does not infer test counts, latency, throughput, uptime, or security severity from code inspection.

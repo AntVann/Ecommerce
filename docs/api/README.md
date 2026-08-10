@@ -6,9 +6,9 @@ The OpenAPI files in contracts/openapi are authoritative for synchronous APIs. T
 
 Validate contracts with:
 
-`powershell
+```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate-contracts.ps1
-`
+```
 
 ## Boundary conventions
 
