@@ -29,4 +29,3 @@ Notification commands are task-oriented and use explicit acknowledgement, retry 
 Additive fields are compatible. Renames, removals, or meaning changes require a new version and contract review. Consumers must tolerate duplicate delivery and retry after restart. Never place passwords, access tokens, card numbers, or provider secrets in messages.
 
 Use docs/runbooks/dead-letter.md and docs/runbooks/outbox-backlog.md for operations.
-
