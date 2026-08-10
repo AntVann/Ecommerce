@@ -52,6 +52,10 @@ public class IdentityService {
                 Clock.systemUTC());
     }
 
+    public List<IdentityRepository.SecurityEvent> securityEvents(int limit, int offset) {
+        return repository.securityEvents(Math.min(limit, 200), Math.max(offset, 0));
+    }
+
     IdentityService(
             IdentityRepository repository,
             PasswordEncoder passwordEncoder,

@@ -108,6 +108,16 @@ public class SellerService {
         return repository.list(status, limit);
     }
 
+    @Transactional(readOnly = true)
+    public List<SellerRepository.SecurityEvent> securityEvents(
+            PrincipalStateVerifier.PrincipalToken principal,
+            int limit,
+            int offset,
+            String correlationId) {
+        requireAdmin(principal, correlationId);
+        return repository.securityEvents(limit, offset);
+    }
+
     @Transactional(noRollbackFor = ApiException.class)
     public SellerRepository.SellerRecord approve(
             PrincipalStateVerifier.PrincipalToken principal,

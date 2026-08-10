@@ -60,6 +60,16 @@ public class InventoryService {
         return repository.items(variantIds.stream().distinct().toList());
     }
 
+    public InventoryRepository.PublicAvailability publicAvailability(UUID variantId) {
+        return repository
+                .item(variantId)
+                .map(
+                        item ->
+                                new InventoryRepository.PublicAvailability(
+                                        item.variantId(), item.available(), item.updatedAt()))
+                .orElseThrow(InventoryService::notFound);
+    }
+
     @Transactional
     public InventoryRepository.Item adjust(
             UUID userId,

@@ -7,20 +7,19 @@
   authenticated carts, cart merge, checkout, simulated payment, order history/details, and
   shipment display.
 - Seller onboarding, role-aware seller workspace, inventory and seller-order views.
-- Admin seller application review, approval, rejection, suspension, and explicit audit-contract
-  limitation state.
+- Admin seller application review, approval, rejection, suspension, and security-audit browsing.
 - TanStack Query server-state management, typed service adapters, CSRF/cookie credentials,
   in-memory access tokens, refresh retry, ETags, idempotency keys, problem-details handling,
   loading/empty/error/permission states, and accessible responsive components.
 - Local Vite same-origin proxy for the eight public service ports. No paid APIs, hosted services,
   real payment credentials, card data, or production secrets are included.
 
-## Contract limitations retained intentionally
+## Additive integration surfaces
 
-The backend does not currently expose seller product listing, public inventory availability,
-image upload/delivery, or audit-event browsing contracts. The UI presents safe explanatory states
-for those areas and does not invent mock production behavior. Search filtering is limited to the
-available query/category parameters until an additive search contract is approved.
+This milestone adds real backend contracts for seller product listing, public variant
+availability, local image upload/delivery, and administrator audit-event browsing. Image bytes are
+stored by the catalog service's local filesystem adapter; the database stores only metadata and
+object keys. Search filtering remains limited to the available query/category parameters.
 
 ## Validation evidence
 

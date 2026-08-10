@@ -83,6 +83,22 @@ public class CatalogRepository {
                 limit);
     }
 
+    public List<Product> sellerProducts(UUID sellerId, String status, int limit) {
+        if (status == null || status.isBlank()) {
+            return jdbc.query(
+                    "SELECT id,seller_id,category_id,title,description,status,attributes::text,version,created_at,updated_at,published_at FROM product WHERE seller_id=? ORDER BY updated_at DESC,id DESC LIMIT ?",
+                    CatalogRepository::mapProduct,
+                    sellerId,
+                    limit);
+        }
+        return jdbc.query(
+                "SELECT id,seller_id,category_id,title,description,status,attributes::text,version,created_at,updated_at,published_at FROM product WHERE seller_id=? AND status=? ORDER BY updated_at DESC,id DESC LIMIT ?",
+                CatalogRepository::mapProduct,
+                sellerId,
+                status,
+                limit);
+    }
+
     public boolean sellerApproved(UUID sellerId) {
         return jdbc.queryForObject(
                         "SELECT count(*) FROM seller_projection WHERE seller_id=? AND status='APPROVED'",
@@ -221,6 +237,17 @@ public class CatalogRepository {
                 "SELECT id,product_id,object_key,content_type,byte_size,width,height,alt_text,display_order,status FROM product_image WHERE product_id=? ORDER BY display_order,id",
                 CatalogRepository::mapImage,
                 productId);
+    }
+
+    public Optional<Image> image(UUID productId, UUID imageId) {
+        return jdbc
+                .query(
+                        "SELECT id,product_id,object_key,content_type,byte_size,width,height,alt_text,display_order,status FROM product_image WHERE product_id=? AND id=?",
+                        CatalogRepository::mapImage,
+                        productId,
+                        imageId)
+                .stream()
+                .findFirst();
     }
 
     public Image addImage(
