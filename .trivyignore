@@ -1,0 +1,3 @@
+# The token issuer and audience in the local ConfigMap are public validation metadata,
+# not credentials. Keep them in the ConfigMap so services share the same local values.
+KSV-0109

@@ -3,6 +3,7 @@ WORKDIR /workspace
 COPY . .
 RUN mvn -q -pl services/catalog-service -am -DskipTests package
 FROM eclipse-temurin:25-jre-alpine
+RUN apk upgrade --no-cache
 RUN addgroup -S -g 10001 marketflow && adduser -S -D -u 10001 -G marketflow marketflow \
     && mkdir -p /app \
     && chown -R 10001:10001 /app

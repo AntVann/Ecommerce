@@ -29,7 +29,7 @@ public class JdbcPaymentStore implements PaymentStore {
     @Override
     public boolean claimIdempotency(String operation, String key, String hash, Instant now) {
         return jdbc.update(
-                        "INSERT INTO idempotency_record(operation,idempotency_key,request_hash,created_at,expires_at) VALUES (?,?,?,?,?+interval '24 hours') ON CONFLICT DO NOTHING",
+                        "INSERT INTO idempotency_record(operation,idempotency_key,request_hash,created_at,expires_at) VALUES (?,?,?,?,CAST(? AS TIMESTAMPTZ) + interval '24 hours') ON CONFLICT DO NOTHING",
                         operation,
                         key,
                         hash,
@@ -90,7 +90,7 @@ public class JdbcPaymentStore implements PaymentStore {
     public void providerResult(
             UUID attemptId, String reference, PaymentStatus status, String reason, Instant now) {
         jdbc.update(
-                "UPDATE payment_attempt SET provider_reference=?,status=?,reason_code=?,completed_at=CASE WHEN ?='PROCESSING' THEN NULL ELSE ? END WHERE id=?",
+                "UPDATE payment_attempt SET provider_reference=?,status=?,reason_code=?,completed_at=CASE WHEN ?='PROCESSING' THEN NULL ELSE CAST(? AS TIMESTAMPTZ) END WHERE id=?",
                 reference,
                 status.name(),
                 reason,

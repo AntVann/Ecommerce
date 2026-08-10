@@ -21,6 +21,7 @@ COPY services/sample-service/src services/sample-service/src
 RUN ./mvnw -B -pl services/sample-service -am package -DskipTests
 
 FROM eclipse-temurin:25-jre-alpine
+RUN apk upgrade --no-cache
 RUN addgroup -S marketflow && adduser -S -G marketflow -u 10001 marketflow
 WORKDIR /app
 COPY --from=build /workspace/services/sample-service/target/sample-service-*.jar app.jar

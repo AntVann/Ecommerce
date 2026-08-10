@@ -19,6 +19,7 @@ COPY services/identity-service/src services/identity-service/src
 RUN ./mvnw -B -pl services/identity-service -am package -DskipTests
 
 FROM eclipse-temurin:25-jre-alpine
+RUN apk upgrade --no-cache
 RUN addgroup -S marketflow && adduser -S -G marketflow -u 10001 marketflow
 WORKDIR /app
 COPY --from=build /workspace/services/identity-service/target/identity-service-*.jar app.jar

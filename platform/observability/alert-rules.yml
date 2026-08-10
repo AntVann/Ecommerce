@@ -1,0 +1,85 @@
+groups:
+  - name: marketflow.platform
+    interval: 30s
+    rules:
+      - alert: MarketFlowServiceUnavailable
+        expr: up{job=~".*-service"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MarketFlow service is unavailable"
+          description: "The {{ $labels.job }} target has been down for more than two minutes."
+
+      - alert: MarketFlowHighServerErrorRate
+        expr: |
+          sum by (job) (rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+            /
+          clamp_min(sum by (job) (rate(http_server_requests_seconds_count[5m])), 1)
+          > 0.05
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "MarketFlow server error rate is elevated"
+          description: "More than five percent of requests are returning 5xx responses for {{ $labels.job }}."
+
+      - alert: MarketFlowBrowseLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (job, le) (rate(http_server_requests_seconds_bucket{uri=~"/api/v1/products.*"}[5m]))) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Product browse latency is high"
+          description: "The product browse p95 latency exceeded 500ms for {{ $labels.job }}."
+
+      - alert: MarketFlowStaleOrderSaga
+        expr: max(order_saga_stale) > 0
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "Order Saga has stale work"
+          description: "At least one order Saga has exceeded its processing deadline."
+
+      - alert: MarketFlowPaymentOutboxBacklog
+        expr: max(payment_outbox_unpublished) > 0
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "Payment outbox backlog is non-empty"
+          description: "Payment events are waiting for publication. Inspect the payment outbox runbook."
+
+      - alert: MarketFlowNotificationDeadLetter
+        expr: increase(notification_delivery_dead_letter_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: high
+        annotations:
+          summary: "Notification delivery reached the dead-letter path"
+          description: "At least one notification entered the terminal failure path in the last ten minutes."
+
+      - alert: MarketFlowAuthenticationFailures
+        expr: increase(authentication_failure_total[10m]) > 25
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Authentication failures are elevated"
+          description: "More than 25 authentication failures were recorded in ten minutes."
+
+      - alert: MarketFlowJvmMemoryPressure
+        expr: |
+          max by (job) (jvm_memory_used_bytes{area="heap"})
+            /
+          clamp_min(max by (job) (jvm_memory_max_bytes{area="heap"}), 1)
+          > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM heap pressure is high"
+          description: "Heap utilization exceeded 90 percent for {{ $labels.job }}."

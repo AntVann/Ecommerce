@@ -15,6 +15,7 @@ spec:
     spec:
       serviceAccountName: marketflow-service
       restartPolicy: Never
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
       containers:
         - name: migration-runner
           image: marketflow/identity-service:local
