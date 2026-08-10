@@ -99,7 +99,7 @@ See the [checkout Saga guide](docs/architecture/checkout-saga.md).
 
 ## Transactional Outbox
 
-Producers persist business state and an outbox event in one local database transaction. A relay publishes committed events afterward. Consumers record processed event IDs with their business effect. Delivery is at-least-once; idempotency makes repeated delivery safe. See [ADR-008](docs/adr/ADR-008-outbox-inbox.md) and the [outbox runbook](docs/runbooks/outbox-backlog.md).
+Producers persist business state and an outbox event in one local database transaction. A relay publishes committed events afterward. Consumers record processed event IDs with their business effect. Delivery is at-least-once; idempotency makes repeated delivery safe. See the [outbox runbook](docs/runbooks/outbox-backlog.md).
 
 ## Data Ownership
 
@@ -157,22 +157,9 @@ services/       bounded-context implementations
 contracts/      OpenAPI, AsyncAPI, event, and message schemas
 frontend/web/   React storefront, seller workspace, and admin console
 platform/       Compose, Kubernetes, Helm, and observability resources
-docs/           architecture, ADRs, APIs, events, security, testing, demos, and runbooks
+docs/           architecture, APIs, events, security, testing, demos, and runbooks
 scripts/        bootstrap, validation, chaos, backup, restore, and fixture commands
 ```
-
-## Architecture Decisions
-
-Important decisions are recorded in [docs/adr](docs/adr): database ownership (ADR-004), Kafka (ADR-005), RabbitMQ (ADR-006), checkout Saga (ADR-007), outbox/inbox (ADR-008), OpenSearch (ADR-010), Redis (ADR-011), token strategy (ADR-012), Kubernetes/Helm (ADR-014), observability (ADR-015), fake payment (ADR-016), money (ADR-018), compatibility (ADR-019), local Kubernetes (ADR-026), and local image storage (ADR-028).
-
-## Known Limitations
-
-- The default environment is local and single-node; it is not an availability or capacity claim.
-- Payment, email, and shipping integrations are simulated/local and do not provide compliance certification.
-- Node 22 is the declared frontend toolchain; older Node versions may show engine warnings.
-- Kubernetes and Helm validation require those tools and a usable local cluster.
-- Development-tool audit findings and local OTLP export warnings are documented in the release report.
-- Hosted cloud deployment, real credentials, payment processing, carrier integration, and paid infrastructure are outside scope.
 
 ## Documentation Map
 
