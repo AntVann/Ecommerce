@@ -28,4 +28,3 @@ flowchart LR
 - PostgreSQL schema changes use migrations and are validated in integration tests.
 
 These rules are recorded in ADR-003 and ADR-004 and are enforced by service boundaries and contracts.
-

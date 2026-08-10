@@ -40,4 +40,3 @@ Consumers acknowledge only after the idempotent effect is recorded. Inspect and 
 ## Compatibility
 
 Additive fields are compatible. Renamed, removed, or semantically changed fields require a new version and compatibility review. See ADR-019 and the schemas in contracts/.
-

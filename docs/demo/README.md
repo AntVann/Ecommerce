@@ -26,4 +26,3 @@ Open http://localhost:5173.
 8. Open Prometheus/Grafana and correlate a request with service logs and traces.
 
 The scripts and prior milestone reports are the evidence source. Do not present simulated payment, fake email, or local single-node deployment as production integrations.
-

@@ -24,4 +24,3 @@ Identity owns password hashes, account state, verification, access-token signing
 ## Evidence and limitations
 
 The threat model is in docs/threat-model/README.md and the hardening assessment is in docs/security/milestone-07-assessment.md. Those documents contain the verified scan scope and limitations. This repository makes no PCI, SOC 2, or production security certification claim.
-

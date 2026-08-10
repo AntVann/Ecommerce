@@ -33,4 +33,3 @@ Local dashboards and alert rules are under platform/observability. Use docs/runb
 - Request latency/error rate and readiness state.
 
 A known local limitation is that some containers attempt OTLP metric export to localhost:4318 while Prometheus metrics remain available; see docs/release/release-candidate-report.md.
-

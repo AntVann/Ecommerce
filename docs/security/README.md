@@ -22,4 +22,3 @@ Identity authenticates users and owns sessions. Seller, Catalog, Inventory, Cart
 - Relevant ADRs: 012, 019, 020, and 021
 
 The repository does not claim PCI, SOC 2, or other compliance certification. Scan results and limitations are recorded in the release evidence rather than inferred here.
-

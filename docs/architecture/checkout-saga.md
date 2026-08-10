@@ -33,4 +33,3 @@ stateDiagram-v2
 ## Operational evidence
 
 Run the local order/payment workflow with docs/runbooks/payment-order-local.md and inspect outbox/inbox state with docs/runbooks/outbox-backlog.md.
-

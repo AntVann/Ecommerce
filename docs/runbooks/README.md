@@ -18,4 +18,3 @@
 | secret-rotation.md | Local placeholder secret rotation |
 
 Runbooks are procedures, not availability guarantees. Use disposable local data, never commit generated output, and record evidence for any claimed result.
-

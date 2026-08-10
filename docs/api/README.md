@@ -35,4 +35,3 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate-contracts
 | Notifications | contracts/openapi/notification-service.yaml |
 
 The frontend uses these real APIs through frontend/web/src/api/client.ts. It does not implement mock business behavior.
-

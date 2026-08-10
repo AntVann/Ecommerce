@@ -31,4 +31,3 @@ The UI is a client of the APIs, not a second authorization layer. Search is a pr
 ## Source of truth
 
 The approved hierarchy is ADRs, contracts, this engineering plan, then code. Start with docs/adr, contracts/, and docs/engineering-plan.md when investigating behavior.
-

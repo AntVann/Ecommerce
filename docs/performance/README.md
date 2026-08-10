@@ -13,4 +13,3 @@ Recommended local workflow:
 5. Record failures and limitations as well as passes.
 
 Performance results do not establish hosted availability, production throughput, or an SLO.
-

@@ -6,4 +6,3 @@
 - [Release readiness notes](../release-readiness.md)
 
 The release-candidate report records tested flows, defects fixed, unresolved environment limitations, compatibility status, migration status, security status, observability status, and the local-only recommendation. It is evidence, not a production certification.
-

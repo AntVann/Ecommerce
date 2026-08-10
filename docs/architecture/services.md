@@ -19,4 +19,3 @@
 - Service-layer authorization is required even when a gateway is present.
 - No service reads another service database or imports another service persistence entity.
 - Each service has its own migration history and outbox where it publishes events.
-
