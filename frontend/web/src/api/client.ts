@@ -46,6 +46,7 @@ export const api = {
   logout: async () => { await request<void>('identity', '/auth/logout', { method: 'POST' }); accessToken = null; },
   categories: () => request<unknown[]>('catalog', '/categories'),
   product: (id: string) => request<Product>('catalog', `/products/${id}`),
+  createProduct: (sellerId: string, payload: unknown) => request<Product>('catalog', `/sellers/${sellerId}/products`, { method: 'POST', body: JSON.stringify(payload) }),
   search: (params: URLSearchParams) => request<SearchResponse>('search', `/products?${params.toString()}`),
   cart: () => request<Cart>('cart', '/cart'),
   addToCart: (variantId: string, quantity: number) => request<Cart>('cart', '/cart/items', { method: 'POST', body: JSON.stringify({ variantId, quantity }) }),
