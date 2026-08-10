@@ -17,7 +17,7 @@ The backend remains authoritative for authentication, authorization, prices, inv
 
 ## Architecture
 
-`mermaid
+```mermaid
 flowchart LR
     actors[Customer / Seller / Admin] --> web[React web UI]
     web --> api[REST service APIs]
@@ -38,7 +38,7 @@ flowchart LR
     order --> rabbit[(RabbitMQ)]
     notification[Notification] --> rabbit
     catalog --> opensearch[(OpenSearch)]
-`
+```
 
 See the architecture guide at docs/architecture/README.md for boundaries, data ownership, messaging, the checkout Saga, security, and observability.
 
@@ -78,7 +78,7 @@ Kafka carries durable, versioned domain facts such as product publication, reser
 
 Order orchestrates checkout across independent stores. It validates current catalog, seller, inventory, and address state, persists an immutable order snapshot, reserves inventory, requests fake payment authorization, and emits confirmation or compensation events.
 
-`mermaid
+```mermaid
 sequenceDiagram
     participant C as Customer
     participant O as Order
@@ -92,7 +92,7 @@ sequenceDiagram
     P-->>O: Authorized, declined, or unknown
     O-->>N: Confirmation task
     O-->>C: Order state and snapshot
-`
+```
 
 See docs/architecture/checkout-saga.md.
 
@@ -133,7 +133,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-infra.ps1
 cd frontend/web
 npm ci
 npm run dev
-`
+```
 
 Open http://localhost:5173. POSIX equivalents are available through make bootstrap, make infra-up, make verify, and make smoke.
 
@@ -145,7 +145,7 @@ Seed the verified local checkout fixture:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\seed-demo-checkout.ps1
 cd frontend/web
 npm run test:e2e
-`
+```
 
 The fixture uses a published demo laptop, local inventory, a verified demo customer, and fake payment outcomes. It is disposable local data, not a production seed or mock API. See docs/demo/README.md.
 
@@ -158,7 +158,7 @@ frontend/web/   React storefront, seller workspace, and admin console
 platform/       Compose, Kubernetes, Helm, and observability resources
 docs/           architecture, ADRs, APIs, events, security, testing, demos, and runbooks
 scripts/        bootstrap, validation, chaos, backup, restore, and fixture commands
-`
+```
 
 ## Architecture Decisions
 

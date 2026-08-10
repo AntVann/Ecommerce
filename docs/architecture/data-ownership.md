@@ -2,7 +2,7 @@
 
 ## Ownership map
 
-`mermaid
+```mermaid
 flowchart LR
     identityDB[(identity PostgreSQL)] --- identity[Identity]
     sellerDB[(seller PostgreSQL)] --- seller[Seller]
@@ -13,7 +13,7 @@ flowchart LR
     notificationDB[(notification PostgreSQL)] --- notification[Notification]
     cartRedis[(Redis)] --- cart[Cart]
     searchOS[(OpenSearch)] --- search[Search projection]
-`
+```
 
 ## Rules
 
