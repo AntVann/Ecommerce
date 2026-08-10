@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help bootstrap infra-up infra-down dev dev-identity dev-seller test verify contracts smoke seed demo
+.PHONY: help bootstrap infra-up infra-down dev dev-identity dev-seller web-install web-dev web-test web-build web-e2e test verify contracts smoke seed demo
 
 help:
 	@echo "MarketFlow development targets"
@@ -10,6 +10,9 @@ help:
 	@echo "  dev         run the sample service outside Docker"
 	@echo "  dev-identity run the Identity service outside Docker"
 	@echo "  dev-seller  run the Seller service outside Docker"
+	@echo "  web-dev     run the local React storefront"
+	@echo "  web-test    run frontend unit tests"
+	@echo "  web-e2e     run frontend Playwright smoke tests"
 	@echo "  test        run Maven tests and quality gates"
 	@echo "  verify      run build, contract, and Compose validation"
 	@echo "  smoke       verify health and observability endpoints"
@@ -31,6 +34,21 @@ dev-identity:
 
 dev-seller:
 	./mvnw -pl services/seller-service spring-boot:run
+
+web-install:
+	cd frontend/web && npm ci
+
+web-dev:
+	cd frontend/web && npm run dev
+
+web-test:
+	cd frontend/web && npm ci && npm run lint && npm run typecheck && npm run test
+
+web-build:
+	cd frontend/web && npm run build
+
+web-e2e:
+	cd frontend/web && npm run test:e2e
 
 test:
 	./mvnw -B clean verify
