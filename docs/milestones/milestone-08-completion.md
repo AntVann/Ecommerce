@@ -30,7 +30,8 @@ Executed in `frontend/web`:
 - `npm run typecheck`
 - `npm run test` (2 validation tests passed)
 - `npm run build`
-- `npm run test:e2e` (Playwright storefront navigation smoke passed)
+- `npm run test:e2e -- checkout.spec.ts` (seeded authenticated customer checkout and simulated
+  approval passed against the local Compose services)
 - `npm audit --omit=dev --audit-level=high` (no high/critical runtime findings; two moderate
   React Router advisories remain in the supported Node 16-compatible major)
 
@@ -41,3 +42,12 @@ Executed at repository root:
 - `/catalog/api/v1/categories` returned real data through the Vite proxy.
 
 The full Maven verification remains an existing backend gate and is rerun before push.
+
+## Repeatable local checkout fixture
+
+Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\seed-demo-checkout.ps1` from the
+repository root before the checkout E2E. The script creates only disposable local data: an approved
+demo seller, an active published laptop product, two variants, 100 units of local inventory, and a
+verified customer account. It rebuilds the local OpenSearch projection and prints the product URL
+and demo credentials. The identifiers and password are intentionally test-only placeholders and
+must not be reused outside the local Compose environment.

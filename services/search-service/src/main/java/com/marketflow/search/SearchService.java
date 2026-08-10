@@ -223,8 +223,12 @@ public class SearchService {
                                         Map.entry(
                                                 "attributes",
                                                 Map.of("type", "object", "dynamic", true)),
-                                        Map.entry("variants", Map.of("type", "nested")),
-                                        Map.entry("images", Map.of("type", "nested")),
+                                        Map.entry(
+                                                "variants",
+                                                Map.of("type", "nested", "dynamic", true)),
+                                        Map.entry(
+                                                "images",
+                                                Map.of("type", "nested", "dynamic", true)),
                                         Map.entry("aggregateVersion", Map.of("type", "long")),
                                         Map.entry("projectedAt", Map.of("type", "date")),
                                         Map.entry("version", Map.of("type", "long")),

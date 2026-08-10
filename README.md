@@ -67,10 +67,11 @@ npm run dev
 ```
 
 Open <http://localhost:5173> for the local UI. The frontend proxy routes browser requests to the
-Compose services while rewriting local cookie paths for refresh and guest-cart CSRF. Set
-`VITE_DEMO_SELLER_ID` for seller inventory and order views. Screens for product listing, image
-upload, public stock, and audit browsing clearly report the backend contract limitations rather
-than using mock business data.
+Compose services. Set
+`VITE_DEMO_SELLER_ID` for seller inventory and order views. To seed a repeatable published product
+and verified customer for the real checkout flow, run
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\seed-demo-checkout.ps1` before opening
+the UI. The fixture is local-only and uses no mock API behavior or paid infrastructure.
 
 The Compose environment exposes these local-only endpoints:
 
