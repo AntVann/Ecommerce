@@ -11,9 +11,10 @@ Saga. It provides idempotent simulated authorization, approval, decline, timeout
 duplicate callback behavior, Inventory confirmation or release compensation, customer order
 history, seller-filtered order views, and manual-review escalation for ambiguous inconsistencies.
 
-This remains an API-first backend. It does not contain a storefront, seller portal, or admin UI.
+Milestone 8 adds a local-only React storefront, seller workspace, and admin console under
+[`frontend/web`](frontend/web). The UI uses the real service APIs through a same-origin Vite
+proxy; it never replaces authorization, price, inventory, seller, order, or payment decisions.
 It never accepts real payment credentials and makes no payment-compliance certification claim.
-Production payment providers, capture, fulfillment, and notification delivery remain future work.
 
 Milestone 6 adds a free/local Kubernetes and Helm deployment profile. It does not provision paid
 managed cloud infrastructure; dependency endpoints and secrets are supplied out-of-band for a
@@ -28,6 +29,8 @@ Milestone 3 evidence is recorded in
 [`docs/milestones/milestone-03-completion.md`](docs/milestones/milestone-03-completion.md).
 Milestone 4 evidence is recorded in
 [`docs/milestones/milestone-04-completion.md`](docs/milestones/milestone-04-completion.md).
+Milestone 8 evidence is recorded in
+[`docs/milestones/milestone-08-completion.md`](docs/milestones/milestone-08-completion.md).
 
 ## Prerequisites
 
@@ -56,7 +59,18 @@ make bootstrap
 make infra-up
 make verify
 make smoke
+
+# in another terminal, after Compose is healthy
+cd frontend/web
+npm ci
+npm run dev
 ```
+
+Open <http://localhost:5173> for the local UI. The frontend proxy routes browser requests to the
+Compose services while rewriting local cookie paths for refresh and guest-cart CSRF. Set
+`VITE_DEMO_SELLER_ID` for seller inventory and order views. Screens for product listing, image
+upload, public stock, and audit browsing clearly report the backend contract limitations rather
+than using mock business data.
 
 The Compose environment exposes these local-only endpoints:
 

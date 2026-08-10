@@ -10,6 +10,13 @@ node_modules/
 coverage/
 playwright-report/
 test-results/
+frontend/web/dist/
+frontend/web/test-results/
+frontend/web/*.tsbuildinfo
+frontend/web/vite.config.js
+frontend/web/vite.config.d.ts
+frontend/web/playwright.config.js
+frontend/web/playwright.config.d.ts
 .DS_Store
 Thumbs.db
 .docker/
