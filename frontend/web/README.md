@@ -5,7 +5,7 @@ The local-only React storefront, seller workspace, and admin console. It uses re
 ## Local development
 
 1. Start the repository services with `docker compose up -d`.
-2. Run `npm ci` and `npm run dev` in this directory.
+2. Use Node.js 22 (`.nvmrc` at the repository root), then run `npm ci` and `npm run dev` in this directory.
 3. Open <http://localhost:5173>.
 
 The proxy routes `/identity`, `/seller`, `/catalog`, `/inventory`, `/search`, `/cart`, `/order`, and `/notification` to the corresponding Compose ports. Set `VITE_DEMO_SELLER_ID` for seller inventory/order views.

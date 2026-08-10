@@ -35,6 +35,7 @@ Milestone 8 evidence is recorded in
 ## Prerequisites
 
 - Java 21
+- Node.js 22 for the frontend and contract tooling
 - Docker Desktop with Docker Compose
 - GNU Make on Linux/macOS, or PowerShell 7 on Windows
 

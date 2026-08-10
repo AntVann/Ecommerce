@@ -32,8 +32,12 @@ Executed in `frontend/web`:
 - `npm run build`
 - `npm run test:e2e -- checkout.spec.ts` (seeded authenticated customer checkout and simulated
   approval passed against the local Compose services)
-- `npm audit --omit=dev --audit-level=high` (no high/critical runtime findings; two moderate
-  React Router advisories remain in the supported Node 16-compatible major)
+- `npm audit --omit=dev --audit-level=moderate` (0 production dependency vulnerabilities after
+  upgrading React Router)
+
+The full development dependency tree still reports existing Vite/Vitest/Playwright toolchain
+advisories. They are not shipped runtime dependencies and were not force-upgraded as part of this
+scoped runtime hardening change.
 
 Executed at repository root:
 
