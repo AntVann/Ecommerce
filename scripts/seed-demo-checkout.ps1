@@ -73,6 +73,10 @@ ON CONFLICT (id) DO UPDATE SET product_id = EXCLUDED.product_id, seller_id = EXC
 "@ | Out-Null
 
 Invoke-Psql -Service 'inventory-postgres' -User 'inventory_app' -Database 'marketflow_inventory' -Sql @"
+DELETE FROM inventory_reservation
+WHERE id IN (
+    SELECT reservation_id FROM inventory_reservation_line WHERE variant_id = '$variantId'
+);
 INSERT INTO inventory_item(variant_id, seller_id, on_hand, reserved, version, created_at, updated_at)
 VALUES ('$variantId', '$sellerId', 100, 0, 1, now(), now())
 ON CONFLICT (variant_id) DO UPDATE SET seller_id = EXCLUDED.seller_id, on_hand = 100, reserved = 0,
