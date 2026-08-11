@@ -110,13 +110,13 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4.37.4
+        uses: github/codeql-action/init@v4.37.6
         with:
           languages: java-kotlin
       - name: Build for CodeQL
-        uses: github/codeql-action/autobuild@v4.37.4
+        uses: github/codeql-action/autobuild@v4.37.6
       - name: Analyze with CodeQL
-        uses: github/codeql-action/analyze@v4.37.4
+        uses: github/codeql-action/analyze@v4.37.6
 
   dependency-review:
     name: Dependency review
