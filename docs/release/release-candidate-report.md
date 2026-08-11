@@ -11,7 +11,7 @@ production-readiness or hosted-cloud certification.
 ## Tested flows
 
 - Infrastructure smoke checks and Compose health/readiness checks.
-- Seeded published product (`MarketFlow Demo Laptop`) and repeatable inventory fixture.
+- Seeded published product (`Aurora Pro Laptop`) and repeatable inventory fixture.
 - Customer sign-in, product browse/detail, cart add, checkout, inventory reservation, simulated
   payment approval, order confirmation, and order detail.
 - Simulated payment decline with `PAYMENT_FAILED` and compensation; the order does not confirm.

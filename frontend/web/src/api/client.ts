@@ -45,7 +45,13 @@ export const api = {
   refresh: async () => { const result = await request<{ accessToken: string; expiresIn: number }>('identity', '/auth/refresh', { method: 'POST' }); accessToken = result.accessToken; return result; },
   logout: async () => { await request<void>('identity', '/auth/logout', { method: 'POST' }); accessToken = null; },
   categories: () => request<unknown[]>('catalog', '/categories'),
-  product: (id: string) => request<Product>('catalog', `/products/${id}`),
+  product: async (id: string) => {
+    const response = await request<Product | { product: Product; variants?: Product['variants']; images?: Image[]; attributes?: Record<string, string> }>('catalog', `/products/${id}`);
+    if ('product' in response) {
+      return { ...response.product, variants: response.variants || [], images: response.images || [], attributes: response.attributes || {} };
+    }
+    return response;
+  },
   createProduct: (sellerId: string, payload: unknown) => request<Product>('catalog', `/sellers/${sellerId}/products`, { method: 'POST', body: JSON.stringify(payload) }),
   sellerProducts: (sellerId: string, status?: string) => request<Product[]>('catalog', `/sellers/${sellerId}/products?limit=100${status ? `&status=${encodeURIComponent(status)}` : ''}`),
   uploadImage: (sellerId: string, productId: string, file: File, altText: string, displayOrder = 0) => { const body = new FormData(); body.append('file', file); body.append('altText', altText); body.append('displayOrder', String(displayOrder)); return request<Image>('catalog', `/sellers/${sellerId}/products/${productId}/images/upload`, { method: 'POST', body }); },

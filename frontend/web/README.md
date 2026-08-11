@@ -13,7 +13,6 @@ The proxy routes `/identity`, `/seller`, `/catalog`, `/inventory`, `/search`, `/
 The backend remains authoritative for authorization, prices, stock, seller state, order state, and payment outcomes. The UI only accepts fake payment tokens such as `mf_fake_approve` and never accepts card numbers.
 
 To exercise the real customer checkout path, run `powershell -NoProfile -ExecutionPolicy Bypass -File
-..\..\scripts\seed-demo-checkout.ps1` from the repository root. The fixture seeds a published demo
-laptop, local inventory, a verified customer, and an OpenSearch projection; it does not create mock
+..\..\scripts\seed-demo-checkout.ps1` from the repository root. The fixture seeds a published Aurora Pro Laptop, seven additional catalog items, local inventory, a verified customer, and an OpenSearch projection; it does not create mock
 API responses or require paid infrastructure. Run `npm run test:e2e -- checkout.spec.ts` after the
 fixture to verify checkout and simulated approval.
