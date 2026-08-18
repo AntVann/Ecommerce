@@ -35,8 +35,8 @@ test('customer completes a seeded checkout with simulated payment', async ({ pag
   await clearCart(page);
 
   await page.getByRole('link', { name: 'Browse' }).click();
-  await expect(page.getByRole('link', { name: 'MarketFlow Demo Laptop' })).toBeVisible();
-  await page.getByRole('link', { name: 'MarketFlow Demo Laptop' }).click();
+  await expect(page.getByRole('link', { name: 'Aurora Pro Laptop' })).toBeVisible();
+  await page.getByRole('link', { name: 'Aurora Pro Laptop' }).click();
   await expect(page).toHaveURL(new RegExp(`/products/${productId}$`));
 
   await expect(page.getByRole('button', { name: 'Add to cart' }).first()).toBeEnabled();
@@ -88,7 +88,7 @@ test('customer sees payment decline compensation without confirming the order', 
   await clearCart(page);
 
   await page.getByRole('link', { name: 'Browse' }).click();
-  await page.getByRole('link', { name: 'MarketFlow Demo Laptop' }).click();
+  await page.getByRole('link', { name: 'Aurora Pro Laptop' }).click();
   await expect(page).toHaveURL(new RegExp(`/products/${productId}$`));
   await Promise.all([
     page.waitForResponse(

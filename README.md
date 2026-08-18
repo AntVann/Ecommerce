@@ -148,7 +148,7 @@ cd frontend/web
 npm run test:e2e
 ```
 
-The fixture uses a published demo laptop, local inventory, a verified demo customer, and fake payment outcomes. It is disposable local data, not a production seed or mock API. See the [demo guide](docs/demo/README.md).
+The fixture uses a published Aurora Pro Laptop, seven additional catalog items, local inventory, a verified test customer, and fake payment outcomes. It is disposable local data, not a production seed or mock API. See the [demo guide](docs/demo/README.md).
 
 ## Project Structure
 

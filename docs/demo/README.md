@@ -17,7 +17,7 @@ Open http://localhost:5173.
 ## Demonstration path
 
 1. Use the seeded customer to sign in.
-2. Browse the published demo laptop and inspect a variant's live availability.
+2. Browse the published Aurora Pro Laptop or any of the additional catalog items and inspect live availability.
 3. Add it to the cart and complete checkout with a shipping address.
 4. Wait for inventory reservation, then choose Approve payment.
 5. Show the confirmed order and payment state.
